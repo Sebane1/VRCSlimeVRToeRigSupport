@@ -1,0 +1,944 @@
+{
+    "layers": [
+        {
+            "name": "ToeLeft1",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft1Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesLeft1Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesLeft1Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesLeft1",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft1Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesLeft1Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesLeft1Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesLeft1",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3220962882041931,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft1",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.32910144329071047,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft1",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeLeft2",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesLeft2Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesLeft2Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesLeft2",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesLeft2Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesLeft2Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesLeft2",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3264092206954956,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.33298349380493166,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeLeft3",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesLeft3Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesLeft3Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesLeft3",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesLeft3Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesLeft3Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesLeft3",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3348671793937683,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3264092206954956,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeLeft4",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesLeft4Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesLeft4Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesLeft4",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesLeft4Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesLeft4Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesLeft4",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.32959291338920596,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3289661407470703,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeLeft5",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesLeft5Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesLeft5Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesLeft5",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeLeft4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesLeft5Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesLeft5Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesLeft5",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.16915662586688996,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.16180729866027833,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeRight1",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight1Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesRight1Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesRight1Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesRight1",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight1Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesRight1Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesRight1Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesRight1",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.32369011640548708,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight1",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3264092206954956,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight1",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeRight2",
+            "states": [
+                {
+                    "name": "Blend Tree",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesRight2Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesRight2Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesRight2",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesRight2Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesRight2Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesRight2",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Blend Tree",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.32668760418891909,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Blend Tree",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3348991274833679,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeRight3",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesRight3Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesRight3Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesRight3",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight2Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesRight3Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesRight3Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesRight3",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.33641576766967776,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3348991274833679,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeRight4",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesRight4Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesRight4Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesRight4",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesRight4Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesRight4Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesRight4",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3320636749267578,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.3348991274833679,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ToeRight5",
+            "states": [
+                {
+                    "name": "Normal",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "ToesRight5Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "ToesRight5Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "TipToesRight5",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Splayed",
+                    "clipName": "Blend Tree",
+                    "clipPath": "",
+                    "isBlendTree": true,
+                    "blendParameter": "ToeRight4Float",
+                    "blendChildren": [
+                        {
+                            "clipName": "SplayedToesRight5Bent",
+                            "threshold": -1.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedToesRight5Neutral",
+                            "threshold": 0.0,
+                            "directBlendWeight": ""
+                        },
+                        {
+                            "clipName": "SplayedTipToesRight5",
+                            "threshold": 1.0,
+                            "directBlendWeight": ""
+                        }
+                    ]
+                }
+            ],
+            "transitions": [
+                {
+                    "from": "Normal",
+                    "to": "Splayed",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.15690769255161286,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.15445789694786073,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "parameters": [
+        {
+            "name": "ToeSplayLeft5",
+            "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
+        {
+            "name": "ToeSplayRight5",
+            "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
+        {
+            "name": "ToeSplayLeft1",
+            "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
+        {
+            "name": "ToeSplayRight1",
+            "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        }
+    ]
+}
