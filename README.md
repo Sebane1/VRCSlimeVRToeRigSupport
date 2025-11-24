@@ -16,4 +16,4 @@ Adds experimental toe rig support compatible with VRChat avatars and specific ve
 - Click Generate Toe Support
 - Your avatar should now have toe support with compatible versions of SlimeVR
 
-You may wish to use another plugin called [OSCSmooth](https://github.com/regzo2/OSCmooth) to make sure the toes look smooth to other people over the network. If you are using OSC Smooth, click the "Uses OSC Smooth" checkbox before hitting generate
+You may wish to use an additional plugin called [OSCSmooth](https://github.com/regzo2/OSCmooth) to make sure the toes look smooth to other people over the network. If you are using OSC Smooth, click the "Uses OSC Smooth" checkbox before hitting generate.
