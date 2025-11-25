@@ -402,6 +402,13 @@ public class ToeRigInjector : EditorWindow
     }
     void SaveOrOverwriteClip(AnimationClip clip, string fullPath)
     {
+        string directory = Path.GetDirectoryName(fullPath);
+        if (!Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+            AssetDatabase.Refresh();
+        }
+
         var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(fullPath);
         if (existing != null)
         {
