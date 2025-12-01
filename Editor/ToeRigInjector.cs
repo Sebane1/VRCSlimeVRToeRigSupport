@@ -89,12 +89,12 @@ public class ToeRigInjector : EditorWindow
     private Transform[] rightFootBones = new Transform[5];
 
     // Max Z rotation offset (splay) per toe
-    private float[] leftFootSplay = new float[5] { 30, -3, -7, -15, -30f };
-    private float[] rightFootSplay = new float[5] { -30f, 3f, 7f, 15f, 30f };
+    private float[] leftFootSplay = new float[5] { 15, -3, -7, -15, -30f };
+    private float[] rightFootSplay = new float[5] { -15, 3f, 7f, 15f, 30f };
 
     // Min/Max X rotation for curl (from neutral)
-    private float curlMinX = -60f;
-    private float curlMaxX = 60f;
+    private float curlMinX = -30f;
+    private float curlMaxX = 30f;
     private bool useOSCSmoothPath;
 
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]
@@ -292,11 +292,19 @@ public class ToeRigInjector : EditorWindow
 
                 st.motion = bt;
 
-                if (firstState == null) firstState = st;
+                AssetDatabase.AddObjectToAsset(bt, controllerPath);
+                EditorUtility.SetDirty(bt);
+
+                if (firstState == null)
+                {
+                    firstState = st;
+                }
             }
 
             if (firstState != null)
+            {
                 injectedLayer.stateMachine.defaultState = firstState;
+            }
 
             foreach (var t in extractedLayer.transitions)
             {
@@ -358,9 +366,9 @@ public class ToeRigInjector : EditorWindow
         float z = euler.z;
 
         // Curl curves (X)
-        AnimationCurve bentX = new AnimationCurve(new Keyframe(0, curlMinX), new Keyframe(1, curlMinX));
+        AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + curlMinX), new Keyframe(1, x + curlMinX));
         AnimationCurve neutralX = new AnimationCurve(new Keyframe(0, x), new Keyframe(1, x));
-        AnimationCurve tipX = new AnimationCurve(new Keyframe(0, curlMaxX), new Keyframe(1, curlMaxX));
+        AnimationCurve tipX = new AnimationCurve(new Keyframe(0, x + curlMaxX), new Keyframe(1, x + curlMaxX));
 
         AnimationCurve bentY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
         AnimationCurve neutralY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
@@ -426,7 +434,7 @@ public class ToeRigInjector : EditorWindow
         while (parent != null)
         {
             path = parent.name + "/" + path;
-            if (parent.name == "Armature")
+            if (parent.name.StartsWith("Armature"))
             {
                 break;
             }
