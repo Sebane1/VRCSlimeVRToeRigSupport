@@ -279,7 +279,26 @@ public class ToeRigInjector : EditorWindow
 
         var newLayersList = controller.layers.ToList();
         string controllerPath = AssetDatabase.GetAssetPath(controller);
-
+        var allObjects = AssetDatabase.LoadAllAssetsAtPath(controllerPath);
+        foreach (var obj in allObjects)
+        {
+            if (obj is AnimatorStateMachine sm)
+            {
+                if (!controller.layers.Any(l => l.stateMachine == sm))
+                {
+                    AssetDatabase.RemoveObjectFromAsset(sm);
+                    UnityEngine.Object.DestroyImmediate(sm, true);
+                }
+            } else if (obj is AnimationClip clip)
+            {
+                if (!remappedClips.Values.Contains(clip))
+                {
+                    AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(clip));
+                }
+            }
+        }
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
         foreach (var extractedLayer in extracted.layers)
         {
             // Check if the layer already exists and remove it if it does
@@ -288,6 +307,12 @@ public class ToeRigInjector : EditorWindow
             {
                 // Remove the existing layer
                 newLayersList.Remove(existingLayer);
+                // Destroy its state machine sub-asset
+                if (existingLayer.stateMachine != null)
+                {
+                    AssetDatabase.RemoveObjectFromAsset(existingLayer.stateMachine);
+                    UnityEngine.Object.DestroyImmediate(existingLayer.stateMachine, true);
+                }
             }
 
 
