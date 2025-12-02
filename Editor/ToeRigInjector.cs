@@ -100,6 +100,61 @@ public class ToeRigInjector : EditorWindow
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]
     public static void Open() => GetWindow<ToeRigInjector>("Toe Tracking Configurator");
 
+    void OnEnable()
+    {
+        targetController = Prefs.GetObject<AnimatorController>("ToeRig_TargetController");
+        selectedExpParams = Prefs.GetObject<VRCExpressionParameters>("ToeRig_SelectedExpParams");
+
+        for (int i = 0; i < 5; i++)
+        {
+            leftFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Left_{i}");
+            rightFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Right_{i}");
+        }
+
+        curlMinX = EditorPrefs.GetFloat("ToeRig_CurlMinX", curlMinX);
+        curlMaxX = EditorPrefs.GetFloat("ToeRig_CurlMaxX", curlMaxX);
+        useOSCSmoothPath = EditorPrefs.GetBool("ToeRig_OSCPath", false);
+
+        for (int i = 0; i < 5; i++)
+        {
+            leftFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_LeftSplay_{i}", leftFootSplay[i]);
+            rightFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_RightSplay_{i}", rightFootSplay[i]);
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            leftFootBones[i] = BonePrefs.LoadBone($"ToeRig_Left_{i}");
+            rightFootBones[i] = BonePrefs.LoadBone($"ToeRig_Right_{i}");
+        }
+    }
+
+    void OnDisable()
+    {
+        Prefs.SetObject("ToeRig_TargetController", targetController);
+        Prefs.SetObject("ToeRig_SelectedExpParams", selectedExpParams);
+
+        for (int i = 0; i < 5; i++)
+        {
+            Prefs.SetObject($"ToeRig_Left_{i}", leftFootBones[i]);
+            Prefs.SetObject($"ToeRig_Right_{i}", rightFootBones[i]);
+        }
+
+        EditorPrefs.SetFloat("ToeRig_CurlMinX", curlMinX);
+        EditorPrefs.SetFloat("ToeRig_CurlMaxX", curlMaxX);
+        EditorPrefs.SetBool("ToeRig_OSCPath", useOSCSmoothPath);
+
+        for (int i = 0; i < 5; i++)
+        {
+            EditorPrefs.SetFloat($"ToeRig_LeftSplay_{i}", leftFootSplay[i]);
+            EditorPrefs.SetFloat($"ToeRig_RightSplay_{i}", rightFootSplay[i]);
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            BonePrefs.SaveBone($"ToeRig_Left_{i}", leftFootBones[i]);
+            BonePrefs.SaveBone($"ToeRig_Right_{i}", rightFootBones[i]);
+        }
+    }
+
+
     void OnGUI()
     {
         scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -438,6 +493,79 @@ public class ToeRigInjector : EditorWindow
             {
                 break;
             }
+            parent = parent.parent;
+        }
+        return path;
+    }
+}
+static class Prefs
+{
+    public static void SetObject(string key, UnityEngine.Object obj)
+    {
+        if (obj == null)
+        {
+            EditorPrefs.DeleteKey(key);
+            return;
+        }
+        string path = AssetDatabase.GetAssetPath(obj);
+        string guid = AssetDatabase.AssetPathToGUID(path);
+        EditorPrefs.SetString(key, guid);
+    }
+
+    public static T GetObject<T>(string key) where T : UnityEngine.Object
+    {
+        if (!EditorPrefs.HasKey(key)) return null;
+        string guid = EditorPrefs.GetString(key);
+        string path = AssetDatabase.GUIDToAssetPath(guid);
+        return AssetDatabase.LoadAssetAtPath<T>(path);
+    }
+}
+static class BonePrefs
+{
+    private static Transform GetRoot(Transform t)
+    {
+        if (t == null) return null;
+        Transform root = t;
+        while (root.parent != null) root = root.parent;
+        return root;
+    }
+
+    public static void SaveBone(string key, Transform t)
+    {
+        if (t == null)
+        {
+            EditorPrefs.DeleteKey(key);
+            return;
+        }
+
+        Transform root = GetRoot(t);
+        string path = GetPathRelativeToRoot(t, root);
+        EditorPrefs.SetString(key, path);
+    }
+
+    public static Transform LoadBone(string key)
+    {
+        if (!EditorPrefs.HasKey(key)) return null;
+        string path = EditorPrefs.GetString(key);
+
+        // Try to find the bone by searching all transforms in the scene
+        foreach (var t in GameObject.FindObjectsOfType<Transform>())
+        {
+            if (t.name == path.Split('/')[^1] && GetPathRelativeToRoot(t, GetRoot(t)) == path)
+                return t;
+        }
+
+        return null;
+    }
+
+    private static string GetPathRelativeToRoot(Transform t, Transform root)
+    {
+        if (t == root) return "";
+        string path = t.name;
+        Transform parent = t.parent;
+        while (parent != null && parent != root)
+        {
+            path = parent.name + "/" + path;
             parent = parent.parent;
         }
         return path;
