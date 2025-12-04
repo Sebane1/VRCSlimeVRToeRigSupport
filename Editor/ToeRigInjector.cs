@@ -246,7 +246,7 @@ public class ToeRigInjector : EditorWindow
     {
         if (sm == null) return;
 
-        // --- 1. Destroy all states and their motions (clips / blendtrees) ---
+        // Destroy all states and their motions (clips / blendtrees) ---
         foreach (var child in sm.states)
         {
             AnimatorState state = child.state;
@@ -279,27 +279,27 @@ public class ToeRigInjector : EditorWindow
             Object.DestroyImmediate(state, true);
         }
 
-        // --- 2. Destroy any-state transitions ---
+        // Destroy any-state transitions
         foreach (var t in sm.anyStateTransitions)
         {
             AssetDatabase.RemoveObjectFromAsset(t);
             Object.DestroyImmediate(t, true);
         }
 
-        // --- 3. Destroy entry transitions ---
+        // Destroy entry transitions
         foreach (var t in sm.entryTransitions)
         {
             AssetDatabase.RemoveObjectFromAsset(t);
             Object.DestroyImmediate(t, true);
         }
 
-        // --- 4. Recursively destroy sub-state machines ---
+        // Recursively destroy sub-state machines
         foreach (var sub in sm.stateMachines)
         {
             DestroyStateMachineRecursive(sub.stateMachine);
         }
 
-        // --- 5. Remove this state machine ---
+        // Remove this state machine
         AssetDatabase.RemoveObjectFromAsset(sm);
         Object.DestroyImmediate(sm, true);
     }
@@ -313,12 +313,16 @@ public class ToeRigInjector : EditorWindow
             {
                 motions.Add(state.state.motion);
                 if (state.state.motion is BlendTree bt)
+                {
                     CollectBlendTreeMotions(bt, motions);
+                }
             }
         }
 
         foreach (var sub in sm.stateMachines)
+        {
             CollectMotions(sub.stateMachine, motions);
+        }
     }
 
     void CollectBlendTreeMotions(BlendTree bt, HashSet<Motion> motions)
@@ -396,11 +400,12 @@ public class ToeRigInjector : EditorWindow
             } else if (obj is BlendTree bt)
             {
                 //// Remove orphaned BlendTrees (not referenced by any state)
-                //if (!usedMotions.Contains(bt) && (bt.name.ToLower().Contains("normal") || bt.name.ToLower().Contains("splayed")))
-                //{
+                if (!usedMotions.Contains(bt) && !string.IsNullOrEmpty(bt.blendParameter) &&
+                    bt.blendParameter.IndexOf("Toe", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
                     AssetDatabase.RemoveObjectFromAsset(bt);
                     Object.DestroyImmediate(bt, true);
-                //}
+                }
             }
         }
 
