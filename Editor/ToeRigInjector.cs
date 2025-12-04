@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using Object = UnityEngine.Object;
 
 public class ToeRigInjector : EditorWindow
 {
@@ -241,6 +242,98 @@ public class ToeRigInjector : EditorWindow
         if (isLeftFoot) return Mathf.Clamp(leftFootSplay[Mathf.Clamp(toeIndex, 0, 4)], -180f, 180f);
         else return Mathf.Clamp(rightFootSplay[Mathf.Clamp(toeIndex, 0, 4)], -180f, 180f);
     }
+    static void DestroyStateMachineRecursive(AnimatorStateMachine sm)
+    {
+        if (sm == null) return;
+
+        // --- 1. Destroy all states and their motions (clips / blendtrees) ---
+        foreach (var child in sm.states)
+        {
+            AnimatorState state = child.state;
+
+            // Remove motion (AnimationClip or BlendTree)
+            if (state.motion is BlendTree bt)
+            {
+                AssetDatabase.RemoveObjectFromAsset(bt);
+                Object.DestroyImmediate(bt, true);
+            } else if (state.motion is AnimationClip clip)
+            {
+                // Only remove if clip is embedded inside controller (sub-asset)
+                string assetPath = AssetDatabase.GetAssetPath(clip);
+                if (assetPath == AssetDatabase.GetAssetPath(sm))
+                {
+                    AssetDatabase.RemoveObjectFromAsset(clip);
+                    Object.DestroyImmediate(clip, true);
+                }
+            }
+
+            // Destroy transitions
+            foreach (var t in state.transitions)
+            {
+                AssetDatabase.RemoveObjectFromAsset(t);
+                Object.DestroyImmediate(t, true);
+            }
+
+            // Remove the state itself
+            AssetDatabase.RemoveObjectFromAsset(state);
+            Object.DestroyImmediate(state, true);
+        }
+
+        // --- 2. Destroy any-state transitions ---
+        foreach (var t in sm.anyStateTransitions)
+        {
+            AssetDatabase.RemoveObjectFromAsset(t);
+            Object.DestroyImmediate(t, true);
+        }
+
+        // --- 3. Destroy entry transitions ---
+        foreach (var t in sm.entryTransitions)
+        {
+            AssetDatabase.RemoveObjectFromAsset(t);
+            Object.DestroyImmediate(t, true);
+        }
+
+        // --- 4. Recursively destroy sub-state machines ---
+        foreach (var sub in sm.stateMachines)
+        {
+            DestroyStateMachineRecursive(sub.stateMachine);
+        }
+
+        // --- 5. Remove this state machine ---
+        AssetDatabase.RemoveObjectFromAsset(sm);
+        Object.DestroyImmediate(sm, true);
+    }
+    void CollectMotions(AnimatorStateMachine sm, HashSet<Motion> motions)
+    {
+        if (sm == null) return;
+
+        foreach (var state in sm.states)
+        {
+            if (state.state.motion != null)
+            {
+                motions.Add(state.state.motion);
+                if (state.state.motion is BlendTree bt)
+                    CollectBlendTreeMotions(bt, motions);
+            }
+        }
+
+        foreach (var sub in sm.stateMachines)
+            CollectMotions(sub.stateMachine, motions);
+    }
+
+    void CollectBlendTreeMotions(BlendTree bt, HashSet<Motion> motions)
+    {
+        motions.Add(bt);
+        foreach (var child in bt.children)
+        {
+            if (child.motion != null)
+            {
+                motions.Add(child.motion);
+                if (child.motion is BlendTree nested)
+                    CollectBlendTreeMotions(nested, motions);
+            }
+        }
+    }
 
     void ApplyInjection()
     {
@@ -280,14 +373,19 @@ public class ToeRigInjector : EditorWindow
         var newLayersList = controller.layers.ToList();
         string controllerPath = AssetDatabase.GetAssetPath(controller);
         var allObjects = AssetDatabase.LoadAllAssetsAtPath(controllerPath);
+        HashSet<Motion> usedMotions = new HashSet<Motion>();
+        foreach (var layer in controller.layers)
+        {
+            CollectMotions(layer.stateMachine, usedMotions);
+        }
         foreach (var obj in allObjects)
         {
             if (obj is AnimatorStateMachine sm)
             {
+                // Remove state machines that are not part of any layer
                 if (!controller.layers.Any(l => l.stateMachine == sm))
                 {
-                    AssetDatabase.RemoveObjectFromAsset(sm);
-                    UnityEngine.Object.DestroyImmediate(sm, true);
+                    DestroyStateMachineRecursive(sm);
                 }
             } else if (obj is AnimationClip clip)
             {
@@ -295,8 +393,17 @@ public class ToeRigInjector : EditorWindow
                 {
                     AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(clip));
                 }
+            } else if (obj is BlendTree bt)
+            {
+                //// Remove orphaned BlendTrees (not referenced by any state)
+                //if (!usedMotions.Contains(bt) && (bt.name.ToLower().Contains("normal") || bt.name.ToLower().Contains("splayed")))
+                //{
+                    AssetDatabase.RemoveObjectFromAsset(bt);
+                    Object.DestroyImmediate(bt, true);
+                //}
             }
         }
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         foreach (var extractedLayer in extracted.layers)
@@ -310,11 +417,9 @@ public class ToeRigInjector : EditorWindow
                 // Destroy its state machine sub-asset
                 if (existingLayer.stateMachine != null)
                 {
-                    AssetDatabase.RemoveObjectFromAsset(existingLayer.stateMachine);
-                    UnityEngine.Object.DestroyImmediate(existingLayer.stateMachine, true);
+                    DestroyStateMachineRecursive(existingLayer.stateMachine);
                 }
             }
-
 
             var injectedLayer = new AnimatorControllerLayer
             {
