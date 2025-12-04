@@ -334,7 +334,9 @@ public class ToeRigInjector : EditorWindow
             {
                 motions.Add(child.motion);
                 if (child.motion is BlendTree nested)
+                {
                     CollectBlendTreeMotions(nested, motions);
+                }
             }
         }
     }
@@ -377,40 +379,7 @@ public class ToeRigInjector : EditorWindow
         var newLayersList = controller.layers.ToList();
         string controllerPath = AssetDatabase.GetAssetPath(controller);
         var allObjects = AssetDatabase.LoadAllAssetsAtPath(controllerPath);
-        HashSet<Motion> usedMotions = new HashSet<Motion>();
-        foreach (var layer in controller.layers)
-        {
-            CollectMotions(layer.stateMachine, usedMotions);
-        }
-        foreach (var obj in allObjects)
-        {
-            if (obj is AnimatorStateMachine sm)
-            {
-                // Remove state machines that are not part of any layer
-                if (!controller.layers.Any(l => l.stateMachine == sm))
-                {
-                    DestroyStateMachineRecursive(sm);
-                }
-            } else if (obj is AnimationClip clip)
-            {
-                if (!remappedClips.Values.Contains(clip))
-                {
-                    AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(clip));
-                }
-            } else if (obj is BlendTree bt)
-            {
-                //// Remove orphaned BlendTrees (not referenced by any state)
-                if (!usedMotions.Contains(bt) && !string.IsNullOrEmpty(bt.blendParameter) &&
-                    bt.blendParameter.IndexOf("Toe", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    AssetDatabase.RemoveObjectFromAsset(bt);
-                    Object.DestroyImmediate(bt, true);
-                }
-            }
-        }
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
         foreach (var extractedLayer in extracted.layers)
         {
             // Check if the layer already exists and remove it if it does
