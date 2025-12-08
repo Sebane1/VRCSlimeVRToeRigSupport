@@ -423,47 +423,51 @@ public class ToeRigInjector : EditorWindow
             foreach (var s in extractedLayer.states)
             {
                 AnimatorState st = injectedLayer.stateMachine.AddState(s.name);
-
-                bool isSplayed = s.name.ToLower().Contains("splayed");
-
-                // Generate 3 clips per toe per state
-                GenerateAutoAnim(extractedLayer.name, controller.name, isSplayed, toeBone, isLeftFoot, toeIndex);
-
-                // Create blendtree
-                var bt = new BlendTree { name = s.name, blendType = BlendTreeType.Simple1D, useAutomaticThresholds = false };
-
-                if (!string.IsNullOrEmpty(s.blendParameter))
+                if (s.isBlendTree)
                 {
-                    // Assign the blend parameter from JSON
-                    bt.blendParameter = (useOSCSmoothPath ? "OSCm/Proxy/" : "") + s.blendParameter;
-                    if (!controller.parameters.Any(p => p.name == s.blendParameter && p.type == AnimatorControllerParameterType.Float))
+                    bool isSplayed = s.name.ToLower().Contains("splayed");
+                    // Generate 3 clips per toe per state
+                    GenerateAutoAnim(extractedLayer.name, controller.name, isSplayed, toeBone, isLeftFoot, toeIndex);
+                    // Create blendtree
+                    var bt = new BlendTree { name = s.name, blendType = BlendTreeType.Simple1D, useAutomaticThresholds = false };
+
+                    if (!string.IsNullOrEmpty(s.blendParameter))
                     {
-                        controller.AddParameter(s.blendParameter, AnimatorControllerParameterType.Float);
+                        // Assign the blend parameter from JSON
+                        bt.blendParameter = (useOSCSmoothPath ? "OSCm/Proxy/" : "") + s.blendParameter;
+                        if (!controller.parameters.Any(p => p.name == s.blendParameter && p.type == AnimatorControllerParameterType.Float))
+                        {
+                            controller.AddParameter(s.blendParameter, AnimatorControllerParameterType.Float);
+                        }
+                        VRCExpressionUtility.AddMissingParameter(selectedExpParams, s.blendParameter, VRCExpressionParameters.ValueType.Float, true, 0, true);
                     }
-                    VRCExpressionUtility.AddMissingParameter(selectedExpParams, s.blendParameter, VRCExpressionParameters.ValueType.Float, true, 0, true);
-                }
 
-                string bentClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Bent" : $"{extractedLayer.name}Bent");
-                string neutralClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Neutral" : $"{extractedLayer.name}Neutral");
-                string tipClipName = controller.name + (isSplayed ? $"SplayedTip{extractedLayer.name}" : $"TipToes{extractedLayer.name}");
+                    string bentClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Bent" : $"{extractedLayer.name}Bent");
+                    string neutralClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Neutral" : $"{extractedLayer.name}Neutral");
+                    string tipClipName = controller.name + (isSplayed ? $"SplayedTip{extractedLayer.name}" : $"TipToes{extractedLayer.name}");
 
-                if (remappedClips.ContainsKey(bentClipName))
+                    if (remappedClips.ContainsKey(bentClipName))
+                    {
+                        bt.AddChild(remappedClips[bentClipName], -1);
+                    }
+                    if (remappedClips.ContainsKey(neutralClipName))
+                    {
+                        bt.AddChild(remappedClips[neutralClipName], 0f);
+                    }
+                    if (remappedClips.ContainsKey(tipClipName))
+                    {
+                        bt.AddChild(remappedClips[tipClipName], 1);
+                    }
+
+                    st.motion = bt;
+
+                    AssetDatabase.AddObjectToAsset(bt, controllerPath);
+                    EditorUtility.SetDirty(bt);
+                } else
                 {
-                    bt.AddChild(remappedClips[bentClipName], -1);
+                    string neutralClipName = controller.name + $"{extractedLayer.name}Neutral";
+                    st.motion = remappedClips[neutralClipName];
                 }
-                if (remappedClips.ContainsKey(neutralClipName))
-                {
-                    bt.AddChild(remappedClips[neutralClipName], 0f);
-                }
-                if (remappedClips.ContainsKey(tipClipName))
-                {
-                    bt.AddChild(remappedClips[tipClipName], 1);
-                }
-
-                st.motion = bt;
-
-                AssetDatabase.AddObjectToAsset(bt, controllerPath);
-                EditorUtility.SetDirty(bt);
 
                 if (firstState == null)
                 {

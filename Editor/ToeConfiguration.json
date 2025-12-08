@@ -50,6 +50,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -72,6 +80,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -84,6 +110,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayLeft1",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -141,6 +203,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -163,6 +233,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -175,6 +263,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -232,6 +356,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -254,6 +386,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": true,
+                    "exitTime": 0.0,
+                    "duration": 0.2499999850988388,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -270,6 +420,42 @@
                             "threshold": 0.0
                         }
                     ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.25,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
                 }
             ]
         },
@@ -281,7 +467,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeLeft2Float",
+                    "blendParameter": "ToeLeft4Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesLeft4Bent",
@@ -305,7 +491,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeLeft4Float",
+                    "blendParameter": "ToeLeft2Float",
                     "blendChildren": [
                         {
                             "clipName": "SplayedToesLeft4Bent",
@@ -323,6 +509,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -345,6 +539,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -357,6 +569,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000298023224,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -414,6 +662,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -436,6 +692,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2499999701976776,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -448,6 +722,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayLeft5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -505,6 +815,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -527,6 +845,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -543,6 +879,42 @@
                             "threshold": 0.0
                         }
                     ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
                 }
             ]
         },
@@ -550,7 +922,7 @@
             "name": "ToeRight2",
             "states": [
                 {
-                    "name": "Blend Tree",
+                    "name": "Normal",
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
@@ -596,11 +968,19 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
                 {
-                    "from": "Blend Tree",
+                    "from": "Normal",
                     "to": "Splayed",
                     "isEntry": false,
                     "isExit": false,
@@ -618,8 +998,26 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": true,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
-                    "to": "Blend Tree",
+                    "to": "Normal",
                     "isEntry": false,
                     "isExit": false,
                     "hasExitTime": false,
@@ -630,6 +1028,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2499999850988388,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -687,6 +1121,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -709,6 +1151,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -725,6 +1185,42 @@
                             "threshold": 0.0
                         }
                     ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
                 }
             ]
         },
@@ -736,7 +1232,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeRight2Float",
+                    "blendParameter": "ToeRight4Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesRight4Bent",
@@ -760,7 +1256,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeRight4Float",
+                    "blendParameter": "ToeRight2Float",
                     "blendChildren": [
                         {
                             "clipName": "SplayedToesRight4Bent",
@@ -778,6 +1274,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -800,6 +1304,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -812,6 +1334,42 @@
                     "conditions": [
                         {
                             "parameter": "ToeSplayRight5",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
                             "mode": 2,
                             "threshold": 0.0
                         }
@@ -869,6 +1427,14 @@
                             "directBlendWeight": ""
                         }
                     ]
+                },
+                {
+                    "name": "NoToes",
+                    "clipName": "",
+                    "clipPath": "",
+                    "isBlendTree": false,
+                    "blendParameter": "",
+                    "blendChildren": []
                 }
             ],
             "transitions": [
@@ -891,6 +1457,24 @@
                     ]
                 },
                 {
+                    "from": "Normal",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
                     "from": "Splayed",
                     "to": "Normal",
                     "isEntry": false,
@@ -907,11 +1491,54 @@
                             "threshold": 0.0
                         }
                     ]
+                },
+                {
+                    "from": "Splayed",
+                    "to": "NoToes",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 1,
+                            "threshold": 0.0
+                        }
+                    ]
+                },
+                {
+                    "from": "NoToes",
+                    "to": "Normal",
+                    "isEntry": false,
+                    "isExit": false,
+                    "hasExitTime": false,
+                    "exitTime": 0.0,
+                    "duration": 0.2500000596046448,
+                    "fixedDuration": true,
+                    "interruptionSource": 0,
+                    "conditions": [
+                        {
+                            "parameter": "NoToes",
+                            "mode": 2,
+                            "threshold": 0.0
+                        }
+                    ]
                 }
             ]
         }
     ],
     "parameters": [
+        {
+            "name": "NoToes",
+            "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
         {
             "name": "ToeSplayLeft5",
             "type": 4,
