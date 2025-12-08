@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
 using Object = UnityEngine.Object;
@@ -84,6 +85,8 @@ public class ToeRigInjector : EditorWindow
     private ToeExtractResult extracted;
     private Dictionary<string, AnimationClip> remappedClips = new();
     private VRCExpressionParameters selectedExpParams;
+    private bool invertValues;
+    private bool swapXAndZAxis;
 
     // Drag-and-drop bones for each foot (up to 5 toes)
     private Transform[] leftFootBones = new Transform[5];
@@ -94,8 +97,8 @@ public class ToeRigInjector : EditorWindow
     private float[] rightFootSplay = new float[5] { -15, 3f, 7f, 15f, 30f };
 
     // Min/Max X rotation for curl (from neutral)
-    private float curlMinX = -30f;
-    private float curlMaxX = 30f;
+    private float curlMinX = -90;
+    private float curlMaxX = 90;
     private bool useOSCSmoothPath;
 
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]
@@ -103,55 +106,61 @@ public class ToeRigInjector : EditorWindow
 
     void OnEnable()
     {
-        targetController = Prefs.GetObject<AnimatorController>("ToeRig_TargetController");
-        selectedExpParams = Prefs.GetObject<VRCExpressionParameters>("ToeRig_SelectedExpParams");
-
-        for (int i = 0; i < 5; i++)
+        targetController = Prefs.GetObject<AnimatorController>("ToeRig_TargetController_" + EditorSceneManager.GetActiveScene().name);
+        LoadConfig();
+    }
+    void LoadConfig()
+    {
+        if (targetController != null)
         {
-            leftFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Left_{i}");
-            rightFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Right_{i}");
-        }
+            selectedExpParams = Prefs.GetObject<VRCExpressionParameters>("ToeRig_SelectedExpParams_" + targetController.name);
 
-        curlMinX = EditorPrefs.GetFloat("ToeRig_CurlMinX", curlMinX);
-        curlMaxX = EditorPrefs.GetFloat("ToeRig_CurlMaxX", curlMaxX);
-        useOSCSmoothPath = EditorPrefs.GetBool("ToeRig_OSCPath", false);
+            for (int i = 0; i < 5; i++)
+            {
+                leftFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Left_{i}_" + targetController.name);
+                rightFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Right_{i}_" + targetController.name);
+            }
 
-        for (int i = 0; i < 5; i++)
-        {
-            leftFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_LeftSplay_{i}", leftFootSplay[i]);
-            rightFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_RightSplay_{i}", rightFootSplay[i]);
-        }
-        for (int i = 0; i < 5; i++)
-        {
-            leftFootBones[i] = BonePrefs.LoadBone($"ToeRig_Left_{i}");
-            rightFootBones[i] = BonePrefs.LoadBone($"ToeRig_Right_{i}");
+            useOSCSmoothPath = EditorPrefs.GetBool("ToeRig_OSCPath_" + targetController.name, false);
+            invertValues = EditorPrefs.GetBool("ToeRig_InvertValuePath_" + targetController.name, false);
+
+            for (int i = 0; i < 5; i++)
+            {
+                leftFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_LeftSplay_{i}_" + targetController.name, leftFootSplay[i]);
+                rightFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_RightSplay_{i}_" + targetController.name, rightFootSplay[i]);
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                leftFootBones[i] = BonePrefs.LoadBone($"ToeRig_Left_{i}_" + targetController.name);
+                rightFootBones[i] = BonePrefs.LoadBone($"ToeRig_Right_{i}_" + targetController.name);
+            }
         }
     }
-
     void OnDisable()
     {
-        Prefs.SetObject("ToeRig_TargetController", targetController);
-        Prefs.SetObject("ToeRig_SelectedExpParams", selectedExpParams);
-
-        for (int i = 0; i < 5; i++)
+        if (targetController != null)
         {
-            Prefs.SetObject($"ToeRig_Left_{i}", leftFootBones[i]);
-            Prefs.SetObject($"ToeRig_Right_{i}", rightFootBones[i]);
-        }
+            Prefs.SetObject("ToeRig_TargetController_" + EditorSceneManager.GetActiveScene().name, targetController);
+            Prefs.SetObject("ToeRig_SelectedExpParams_" + targetController.name, selectedExpParams);
 
-        EditorPrefs.SetFloat("ToeRig_CurlMinX", curlMinX);
-        EditorPrefs.SetFloat("ToeRig_CurlMaxX", curlMaxX);
-        EditorPrefs.SetBool("ToeRig_OSCPath", useOSCSmoothPath);
+            for (int i = 0; i < 5; i++)
+            {
+                Prefs.SetObject($"ToeRig_Left_{i}_" + targetController.name, leftFootBones[i]);
+                Prefs.SetObject($"ToeRig_Right_{i}_" + targetController.name, rightFootBones[i]);
+            }
+            EditorPrefs.SetBool("ToeRig_OSCPath_" + targetController.name, useOSCSmoothPath);
+            EditorPrefs.SetBool("ToeRig_InvertValuePath_" + targetController.name, invertValues);
 
-        for (int i = 0; i < 5; i++)
-        {
-            EditorPrefs.SetFloat($"ToeRig_LeftSplay_{i}", leftFootSplay[i]);
-            EditorPrefs.SetFloat($"ToeRig_RightSplay_{i}", rightFootSplay[i]);
-        }
-        for (int i = 0; i < 5; i++)
-        {
-            BonePrefs.SaveBone($"ToeRig_Left_{i}", leftFootBones[i]);
-            BonePrefs.SaveBone($"ToeRig_Right_{i}", rightFootBones[i]);
+            for (int i = 0; i < 5; i++)
+            {
+                EditorPrefs.SetFloat($"ToeRig_LeftSplay_{i}_" + targetController.name, leftFootSplay[i]);
+                EditorPrefs.SetFloat($"ToeRig_RightSplay_{i}_" + targetController.name, rightFootSplay[i]);
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                BonePrefs.SaveBone($"ToeRig_Left_{i}_" + targetController.name, leftFootBones[i]);
+                BonePrefs.SaveBone($"ToeRig_Right_{i}_" + targetController.name, rightFootBones[i]);
+            }
         }
     }
 
@@ -183,8 +192,10 @@ public class ToeRigInjector : EditorWindow
 
         useOSCSmoothPath = EditorGUILayout.Toggle($"Uses OSC Smooth", useOSCSmoothPath);
         EditorGUILayout.Space();
-        curlMinX = EditorGUILayout.FloatField("Curl Min X", curlMinX);
-        curlMaxX = EditorGUILayout.FloatField("Curl Max X", curlMaxX);
+        invertValues = EditorGUILayout.Toggle($"Invert Values", invertValues);
+        EditorGUILayout.Space();
+        //curlMinX = EditorGUILayout.FloatField("Curl Min X", curlMinX);
+        //curlMaxX = EditorGUILayout.FloatField("Curl Max X", curlMaxX);
         EditorGUILayout.Space();
 
         EditorGUILayout.LabelField("Left Foot Splay (big-to-pinky)");
@@ -438,7 +449,7 @@ public class ToeRigInjector : EditorWindow
 
                 if (remappedClips.ContainsKey(bentClipName))
                 {
-                    bt.AddChild(remappedClips[bentClipName], -1f);
+                    bt.AddChild(remappedClips[bentClipName], -1);
                 }
                 if (remappedClips.ContainsKey(neutralClipName))
                 {
@@ -446,7 +457,7 @@ public class ToeRigInjector : EditorWindow
                 }
                 if (remappedClips.ContainsKey(tipClipName))
                 {
-                    bt.AddChild(remappedClips[tipClipName], 1f);
+                    bt.AddChild(remappedClips[tipClipName], 1);
                 }
 
                 st.motion = bt;
@@ -524,19 +535,22 @@ public class ToeRigInjector : EditorWindow
         float y = euler.y;
         float z = euler.z;
 
+        float finalCurlMinX = invertValues ? -curlMinX : curlMinX;
+        float finalCurlMaxX = invertValues ? -curlMaxX : curlMaxX;
+        float finalSplay = invertValues ? -splay : splay;
         // Curl curves (X)
-        AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + curlMinX), new Keyframe(1, x + curlMinX));
+        AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + finalCurlMinX), new Keyframe(1, x + finalCurlMinX));
         AnimationCurve neutralX = new AnimationCurve(new Keyframe(0, x), new Keyframe(1, x));
-        AnimationCurve tipX = new AnimationCurve(new Keyframe(0, x + curlMaxX), new Keyframe(1, x + curlMaxX));
+        AnimationCurve tipX = new AnimationCurve(new Keyframe(0, x + finalCurlMaxX), new Keyframe(1, x + finalCurlMaxX));
 
         AnimationCurve bentY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
         AnimationCurve neutralY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
         AnimationCurve tipY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
 
         // Splay curves (Z)
-        AnimationCurve bentZ = new AnimationCurve(new Keyframe(0, z + splay), new Keyframe(1, z + splay));
-        AnimationCurve neutralZ = new AnimationCurve(new Keyframe(0, z + splay), new Keyframe(1, z + splay));
-        AnimationCurve tipZ = new AnimationCurve(new Keyframe(0, z + splay), new Keyframe(1, z + splay));
+        AnimationCurve bentZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+        AnimationCurve neutralZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+        AnimationCurve tipZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
 
         AnimationClip bentClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
         AnimationClip neutralClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
