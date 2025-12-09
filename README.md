@@ -3,7 +3,7 @@ Adds experimental toe rig support compatible with VRChat avatars and specific ve
 **Instructions:**
 
 - Import the unity package
-- Verify the X axis on you avatars toes bend up and down properly. If they dont, you will need to use blender or an equivalent program to fix the armature.
+- Verify the X axis on your avatars toes bend up and down properly. If they dont, you will need to use blender or an equivalent program to fix the armature.
 - Go to Tools -> Toe Rig -> Add Toe Tracking Compatibility
 - Wait for a window to appear.
 - Find your avatars expression parameters, drag the file in.
