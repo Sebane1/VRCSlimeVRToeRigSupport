@@ -194,9 +194,6 @@ public class ToeRigInjector : EditorWindow
         EditorGUILayout.Space();
         invertValues = EditorGUILayout.Toggle($"Invert Values", invertValues);
         EditorGUILayout.Space();
-        //curlMinX = EditorGUILayout.FloatField("Curl Min X", curlMinX);
-        //curlMaxX = EditorGUILayout.FloatField("Curl Max X", curlMaxX);
-        EditorGUILayout.Space();
 
         EditorGUILayout.LabelField("Left Foot Splay (big-to-pinky)");
         for (int i = 0; i < 5; i++)
@@ -532,51 +529,68 @@ public class ToeRigInjector : EditorWindow
         // Skip if already generated
         if (remappedClips.ContainsKey(bentClipName)) return;
 
-        float splay = isSplayed ? GetToeSplay(isLeftFoot, toeIndex) : 0;
+        float splay = isSplayed ? GetToeSplay(isLeftFoot, toeIndex) : 0;;
 
-        Vector3 euler = (isLeftFoot ? leftFootBones[toeIndex] : rightFootBones[toeIndex]).transform.localRotation.eulerAngles;
-        float x = euler.x;
-        float y = euler.y;
-        float z = euler.z;
+        List<Transform> toeTransforms = new List<Transform>();
 
-        float finalCurlMinX = invertValues ? -curlMinX : curlMinX;
-        float finalCurlMaxX = invertValues ? -curlMaxX : curlMaxX;
-        float finalSplay = invertValues ? -splay : splay;
-        // Curl curves (X)
-        AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + finalCurlMinX), new Keyframe(1, x + finalCurlMinX));
-        AnimationCurve neutralX = new AnimationCurve(new Keyframe(0, x), new Keyframe(1, x));
-        AnimationCurve tipX = new AnimationCurve(new Keyframe(0, x + finalCurlMaxX), new Keyframe(1, x + finalCurlMaxX));
-
-        AnimationCurve bentY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
-        AnimationCurve neutralY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
-        AnimationCurve tipY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
-
-        // Splay curves (Z)
-        AnimationCurve bentZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
-        AnimationCurve neutralZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
-        AnimationCurve tipZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+        toeTransforms.Add(toeBone);
+        if (toeBone.childCount > 0)
+        {
+            var childBone = toeBone.GetChild(0);
+            if (!childBone.name.EndsWith("_end"))
+            {
+                toeTransforms.Add(childBone);
+            }
+        }
 
         AnimationClip bentClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
         AnimationClip neutralClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
         AnimationClip tipClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
 
-        bentClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.x", bentX);
-        bentClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.y", bentY);
-        bentClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.z", bentZ);
+        for (int i = 0; i < toeTransforms.Count; i++)
+        {
 
-        neutralClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.x", neutralX);
-        neutralClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.y", neutralY);
-        neutralClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.z", neutralZ);
+            Transform toeSegment = toeTransforms[i];
+            Vector3 euler = toeSegment.localRotation.eulerAngles;
+            float x = euler.x;
+            float y = euler.y;
+            float z = euler.z;
+
+            float finalCurlMinX = (invertValues ? -curlMinX : curlMinX) / toeTransforms.Count;
+            float finalCurlMaxX =  i == 0 ? (invertValues ? -curlMaxX : curlMaxX) : x;
+            float finalSplay = invertValues ? -splay : splay;
+
+            // Curl curves (X)
+            AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + finalCurlMinX), new Keyframe(1, x + finalCurlMinX));
+            AnimationCurve neutralX = new AnimationCurve(new Keyframe(0, x), new Keyframe(1, x));
+            AnimationCurve tipX = new AnimationCurve(new Keyframe(0, x + finalCurlMaxX), new Keyframe(1, x + finalCurlMaxX));
+
+            AnimationCurve bentY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
+            AnimationCurve neutralY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
+            AnimationCurve tipY = new AnimationCurve(new Keyframe(0, y), new Keyframe(1, y));
+
+            // Splay curves (Z)
+            AnimationCurve bentZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+            AnimationCurve neutralZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+            AnimationCurve tipZ = new AnimationCurve(new Keyframe(0, z + finalSplay), new Keyframe(1, z + finalSplay));
+
+            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", bentX);
+            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", bentY);
+            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", bentZ);
+
+            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", neutralX);
+            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", neutralY);
+            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", neutralZ);
 
 
-        tipClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.x", tipX);
-        tipClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.y", tipY);
-        tipClip.SetCurve(GetBonePath(toeBone), typeof(Transform), "localEulerAnglesRaw.z", tipZ);
+            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", tipX);
+            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", tipY);
+            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", tipZ);
+        }
 
         string bentPath = $"{clipOutputFolder}/{bentClipName}.anim";
         string neutralPath = $"{clipOutputFolder}/{neutralClipName}.anim";
         string tipPath = $"{clipOutputFolder}/{tipClipName}.anim";
-
         SaveOrOverwriteClip(bentClip, bentPath);
         SaveOrOverwriteClip(neutralClip, neutralPath);
         SaveOrOverwriteClip(tipClip, tipPath);
