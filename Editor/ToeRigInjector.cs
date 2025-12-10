@@ -558,7 +558,7 @@ public class ToeRigInjector : EditorWindow
 
             float finalCurlMinX = (invertValues ? -curlMinX : curlMinX) / toeTransforms.Count;
             float finalCurlMaxX =  i == 0 ? (invertValues ? -curlMaxX : curlMaxX) : x;
-            float finalSplay = invertValues ? -splay : splay;
+            float finalSplay = i == 0 ? invertValues ? -splay : splay : 0;
 
             // Curl curves (X)
             AnimationCurve bentX = new AnimationCurve(new Keyframe(0, x + finalCurlMinX), new Keyframe(1, x + finalCurlMinX));
