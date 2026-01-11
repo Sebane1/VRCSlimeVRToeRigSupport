@@ -227,7 +227,8 @@ public class ToeRigInjector : EditorWindow
             if (jsonFile == null || targetController == null)
             {
                 EditorUtility.DisplayDialog("Missing data", "Please target AnimatorController.", "OK");
-            } else
+            }
+            else
             {
                 ApplyInjection();
             }
@@ -264,7 +265,8 @@ public class ToeRigInjector : EditorWindow
             {
                 AssetDatabase.RemoveObjectFromAsset(bt);
                 Object.DestroyImmediate(bt, true);
-            } else if (state.motion is AnimationClip clip)
+            }
+            else if (state.motion is AnimationClip clip)
             {
                 // Only remove if clip is embedded inside controller (sub-asset)
                 string assetPath = AssetDatabase.GetAssetPath(clip);
@@ -460,10 +462,14 @@ public class ToeRigInjector : EditorWindow
 
                     AssetDatabase.AddObjectToAsset(bt, controllerPath);
                     EditorUtility.SetDirty(bt);
-                } else
+                }
+                else
                 {
                     string neutralClipName = controller.name + $"{extractedLayer.name}Neutral";
-                    st.motion = remappedClips[neutralClipName];
+                    if (remappedClips.ContainsKey(neutralClipName))
+                    {
+                        st.motion = remappedClips[neutralClipName];
+                    }
                 }
 
                 if (firstState == null)
@@ -497,7 +503,8 @@ public class ToeRigInjector : EditorWindow
 
                     foreach (var c in t.conditions)
                         tr.AddCondition(c.mode, c.threshold, c.parameter);
-                } else if (toState != null)
+                }
+                else if (toState != null)
                 {
                     var tr = injectedLayer.stateMachine.AddAnyStateTransition(toState);
                     tr.hasExitTime = false;
@@ -529,7 +536,7 @@ public class ToeRigInjector : EditorWindow
         // Skip if already generated
         if (remappedClips.ContainsKey(bentClipName)) return;
 
-        float splay = isSplayed ? GetToeSplay(isLeftFoot, toeIndex) : 0;;
+        float splay = isSplayed ? GetToeSplay(isLeftFoot, toeIndex) : 0; ;
 
         List<Transform> toeTransforms = new List<Transform>();
 
@@ -557,7 +564,7 @@ public class ToeRigInjector : EditorWindow
             float z = euler.z;
 
             float finalCurlMinX = (invertValues ? -curlMinX : curlMinX) / toeTransforms.Count;
-            float finalCurlMaxX =  i == 0 ? (invertValues ? -curlMaxX : curlMaxX) : x;
+            float finalCurlMaxX = i == 0 ? (invertValues ? -curlMaxX : curlMaxX) : x;
             float finalSplay = i == 0 ? invertValues ? -splay : splay : 0;
 
             // Curl curves (X)
