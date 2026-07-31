@@ -95,8 +95,8 @@ public class ToeRigInjector : EditorWindow
     private float[] rightFootSplay = new float[5] { -15, 3f, 7f, 15f, 30f };
 
     // Min/Max X rotation for curl (from neutral)
-    private float curlMinX = -90;
-    private float curlMaxX = 90;
+    private float curlMinX = 90;
+    private float curlMaxX = -90;
     private bool useOSCSmoothPath;
 
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]

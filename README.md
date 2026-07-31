@@ -1,6 +1,11 @@
 Adds experimental toe rig support compatible with VRChat avatars and specific versions of the SlimeVR server.
 
 ## Installation
+
+[![Add to VCC](https://img.shields.io/badge/Add_to-VCC-blue?logo=vrchat&logoColor=white&style=for-the-badge)](vcc://vpm/addRepo?url=https%3A%2F%2Fraw.githubusercontent.com%2FSebane1%2FVRCSlimeVRToeRigSupport%2Fmain%2Findex.json)
+
+*(If the button above does not work in your browser, follow the manual steps below)*
+
 1. Open the **VRChat Creator Companion**.
 2. Navigate to **Settings** -> **Packages** -> **Add Repository**.
 3. Enter the repository URL for this plugin: `https://raw.githubusercontent.com/Sebane1/VRCSlimeVRToeRigSupport/main/index.json`
