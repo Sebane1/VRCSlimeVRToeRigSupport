@@ -104,7 +104,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.32910144329071047,
+                    "duration": 0.32910144329071045,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -257,7 +257,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.33298349380493166,
+                    "duration": 0.33298349380493164,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -527,7 +527,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.32959291338920596,
+                    "duration": 0.32959291338920593,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -620,7 +620,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeLeft4Float",
+                    "blendParameter": "ToeLeft5Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesLeft5Bent",
@@ -644,7 +644,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeLeft4Float",
+                    "blendParameter": "ToeLeft5Float",
                     "blendChildren": [
                         {
                             "clipName": "SplayedToesLeft5Bent",
@@ -680,7 +680,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.16915662586688996,
+                    "duration": 0.16915662586688995,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -716,7 +716,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.16180729866027833,
+                    "duration": 0.16180729866027832,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -833,7 +833,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.32369011640548708,
+                    "duration": 0.32369011640548706,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -986,7 +986,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.32668760418891909,
+                    "duration": 0.32668760418891907,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -1139,7 +1139,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.33641576766967776,
+                    "duration": 0.33641576766967773,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -1385,7 +1385,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeRight4Float",
+                    "blendParameter": "ToeRight5Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesRight5Bent",
@@ -1409,7 +1409,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeRight4Float",
+                    "blendParameter": "ToeRight5Float",
                     "blendChildren": [
                         {
                             "clipName": "SplayedToesRight5Bent",
@@ -1445,7 +1445,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.15690769255161286,
+                    "duration": 0.15690769255161285,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -1481,7 +1481,7 @@
                     "isExit": false,
                     "hasExitTime": false,
                     "exitTime": 0.0,
-                    "duration": 0.15445789694786073,
+                    "duration": 0.15445789694786072,
                     "fixedDuration": true,
                     "interruptionSource": 0,
                     "conditions": [
@@ -1563,6 +1563,20 @@
         {
             "name": "ToeSplayRight1",
             "type": 4,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
+        {
+            "name": "ToeRight5Float",
+            "type": 1,
+            "defaultFloat": 0.0,
+            "defaultInt": 0,
+            "defaultBool": false
+        },
+        {
+            "name": "ToeLeft5Float",
+            "type": 1,
             "defaultFloat": 0.0,
             "defaultInt": 0,
             "defaultBool": false
