@@ -45,27 +45,39 @@ jobs:
           # Create zip without root subfolder
           zip -r package.zip package.json Editor/ README.md
           
-          # Generate dynamic index.json
+          # Generate dynamic index.json that accumulates versions
           python3 -c "
-          import json, os
+          import json, os, urllib.request
           with open('package.json') as f:
               pkg = json.load(f)
           version = pkg['version']
           repo = os.environ['GITHUB_REPOSITORY']
-          index = {
-              'name': 'Sebane\'s VRChat Packages',
-              'author': 'Sebane',
-              'url': f'https://github.com/{repo}/releases/latest/download/index.json',
-              'id': 'com.sebane.vpm',
-              'packages': {
-                  pkg['name']: {
-                      'versions': {
-                          version: pkg
+          
+          # Try to fetch existing index.json to preserve old versions
+          try:
+              req = urllib.request.Request(f'https://github.com/{repo}/releases/latest/download/index.json')
+              with urllib.request.urlopen(req) as response:
+                  index = json.loads(response.read().decode())
+              if pkg['name'] not in index['packages']:
+                  index['packages'][pkg['name']] = {'versions': {}}
+          except Exception as e:
+              print('Could not fetch existing index.json, creating a new one.')
+              index = {
+                  'name': 'Sebane\'s VRChat Packages',
+                  'author': 'Sebane',
+                  'url': f'https://github.com/{repo}/releases/latest/download/index.json',
+                  'id': 'com.sebane.vpm',
+                  'packages': {
+                      pkg['name']: {
+                          'versions': {}
                       }
                   }
               }
-          }
+          
+          # Inject new version
+          index['packages'][pkg['name']]['versions'][version] = pkg
           index['packages'][pkg['name']]['versions'][version]['url'] = f'https://github.com/{repo}/releases/download/v{version}/package.zip'
+          
           with open('index.json', 'w') as f:
               json.dump(index, f, indent=2)
           "
