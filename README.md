@@ -18,7 +18,7 @@ Adds experimental toe rig support compatible with VRChat avatars and specific ve
 5. **Adjust Values (Optional):** Tweak the numbered values in degrees as you desire, or keep them as is. 
    - *Splay values control how much toes can go sideways per toe.*
 6. **Assign Toe Bones:** After the values are to your liking, find and assign the toe bones from your avatar's rig into the slots. 
-   - *Note:* Use as many toes as your rig supports (minimum 1 per foot, up to 5). If your avatar has fewer than 5 toes, simply leave the extra boxes empty (`None`). The script will safely skip them. You may wish to assign your final toe to slot 5 for pinky toe splay.
+   - *Note:* Use as many toes as your rig supports (minimum 1 per foot, up to 5). If your avatar has fewer than 5 toes, simply leave the extra boxes empty (`None`). The tool will safely skip them. You may wish to assign your final toe to slot 5 for pinky toe splay.
 7. Click **Generate Toe Support**.
 8. Your avatar should now have toe tracking support with compatible versions of SlimeVR!
 
