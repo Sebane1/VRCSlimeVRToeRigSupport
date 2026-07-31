@@ -16,26 +16,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Auto-bump version (if triggered by tag)
+      - name: Auto-bump version and determine prerelease
         id: version
         run: |
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            # Extract version from tag (e.g. v1.0.1 -> 1.0.1)
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "Triggered by tag. Bumping version to $VERSION"
             
-            # Switch to main to commit the bump
             git checkout main
             jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
-            
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add package.json
-            git commit -m "chore: auto-bump version to $VERSION [skip ci]" || echo "No changes to commit"
-            git push origin main
           else
-            # If triggered by a normal push to main, just read the existing version
+            git checkout main
             VERSION=$(jq -r .version package.json)
+          fi
+          
+          # Check if this is a pre-release (contains a hyphen like -alpha or -beta)
+          if [[ "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
           fi
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -45,33 +44,27 @@ jobs:
           # Create zip without root subfolder
           zip -r package.zip package.json Editor/ README.md
           
-          # Generate dynamic index.json that accumulates versions
+          # Update the local index.json file to accumulate versions
           python3 -c "
-          import json, os, urllib.request
+          import json, os
           with open('package.json') as f:
               pkg = json.load(f)
           version = pkg['version']
           repo = os.environ['GITHUB_REPOSITORY']
           
-          # Try to fetch existing index.json to preserve old versions
+          # Try to load existing local index.json
           try:
-              req = urllib.request.Request(f'https://github.com/{repo}/releases/latest/download/index.json')
-              with urllib.request.urlopen(req) as response:
-                  index = json.loads(response.read().decode())
+              with open('index.json', 'r') as f:
+                  index = json.load(f)
               if pkg['name'] not in index['packages']:
                   index['packages'][pkg['name']] = {'versions': {}}
           except Exception as e:
-              print('Could not fetch existing index.json, creating a new one.')
               index = {
                   'name': 'Sebane\'s VRChat Packages',
                   'author': 'Sebane',
-                  'url': f'https://github.com/{repo}/releases/latest/download/index.json',
+                  'url': f'https://raw.githubusercontent.com/{repo}/main/index.json',
                   'id': 'com.sebane.vpm',
-                  'packages': {
-                      pkg['name']: {
-                          'versions': {}
-                      }
-                  }
+                  'packages': { pkg['name']: { 'versions': {} } }
               }
           
           # Inject new version
@@ -82,13 +75,20 @@ jobs:
               json.dump(index, f, indent=2)
           "
 
+      - name: Commit files to main
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json index.json
+          git commit -m "chore: auto-update index.json and version to ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
+          git push origin main
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
-          files: |
-            package.zip
-            index.json
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          files: package.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
