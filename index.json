@@ -1,7 +1,7 @@
 {
   "name": "Sebane's VRChat Packages",
   "author": "Sebane",
-  "url": "https://sebane1.github.io/VRCSlimeVRToeRigSupport/index.json",
+  "url": "https://raw.githubusercontent.com/Sebane1/VRCSlimeVRToeRigSupport/main/index.json",
   "id": "com.sebane.vpm",
   "packages": {
     "com.sebane.slimevrtoerigsupport": {

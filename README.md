@@ -2,8 +2,8 @@ Adds experimental toe rig support compatible with VRChat avatars and specific ve
 
 ## Installation
 1. Open the **VRChat Creator Companion**.
-2. Navigate to **Settings** -> **Packages** (or **Tools** depending on your VCC version) -> **Add Repository**.
-3. Enter the repository URL for this plugin: `https://sebane1.github.io/VRCSlimeVRToeRigSupport/index.json`
+2. Navigate to **Settings** -> **Packages** -> **Add Repository**.
+3. Enter the repository URL for this plugin: `https://raw.githubusercontent.com/Sebane1/VRCSlimeVRToeRigSupport/main/index.json`
 4. Once added, open your Avatar project in VCC.
 5. Find "SlimeVR Toe Rig Support" in the package list and click the **(+)** button to install it.
 
