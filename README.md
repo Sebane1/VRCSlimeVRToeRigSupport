@@ -2,7 +2,7 @@ Adds experimental toe rig support compatible with VRChat avatars and specific ve
 
 ## Installation
 
-[![Add to VCC](https://img.shields.io/badge/Add_to-VCC-blue?logo=vrchat&logoColor=white&style=for-the-badge)](vcc://vpm/addRepo?url=https%3A%2F%2Fraw.githubusercontent.com%2FSebane1%2FVRCSlimeVRToeRigSupport%2Fmain%2Findex.json)
+[![Add to VCC](https://img.shields.io/badge/Add_to-VCC-blue?logo=vrchat&logoColor=white&style=for-the-badge)](https://sebane1.github.io/VRCSlimeVRToeRigSupport/)
 
 *(If the button above does not work in your browser, follow the manual steps below)*
 
