@@ -1,6 +1,6 @@
 {
   "name": "com.sebane.slimevrtoerigsupport",
-  "version": "1.0.3-alpha",
+  "version": "1.0.2-alpha",
   "displayName": "SlimeVR Toe Rig Support",
   "description": "Adds experimental toe rig support compatible with VRChat avatars and specific versions of SlimeVR server.",
   "unity": "2019.4",
