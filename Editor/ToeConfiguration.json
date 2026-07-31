@@ -467,7 +467,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeLeft4Float",
+                    "blendParameter": "ToeLeft5Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesLeft4Bent",
@@ -1232,7 +1232,7 @@
                     "clipName": "Blend Tree",
                     "clipPath": "",
                     "isBlendTree": true,
-                    "blendParameter": "ToeRight4Float",
+                    "blendParameter": "ToeRight5Float",
                     "blendChildren": [
                         {
                             "clipName": "ToesRight4Bent",
