@@ -1,0 +1,23 @@
+{
+  "name": "Sebane's VRChat Packages",
+  "author": "Sebane",
+  "url": "https://sebane1.github.io/VRCSlimeVRToeRigSupport/index.json",
+  "id": "com.sebane.vpm",
+  "packages": {
+    "com.sebane.slimevrtoerigsupport": {
+      "versions": {
+        "1.0.0": {
+          "name": "com.sebane.slimevrtoerigsupport",
+          "version": "1.0.0",
+          "displayName": "SlimeVR Toe Rig Support",
+          "description": "Adds experimental toe rig support compatible with VRChat avatars and specific versions of SlimeVR server.",
+          "unity": "2019.4",
+          "author": {
+            "name": "Sebane"
+          },
+          "url": "https://github.com/Sebane1/VRCSlimeVRToeRigSupport/archive/refs/heads/main.zip"
+        }
+      }
+    }
+  }
+}
