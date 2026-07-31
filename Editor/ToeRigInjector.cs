@@ -532,6 +532,31 @@ public class ToeRigInjector : EditorWindow
         EditorUtility.DisplayDialog("Toe configuration completed!", "Toe support has been added.", "OK");
     }
 
+    Transform GetAvatarRoot(Transform t)
+    {
+        if (t == null) return null;
+        Transform parent = t.parent;
+        Transform lastParent = t;
+        while (parent != null)
+        {
+            if (parent.GetComponent<Animator>() != null)
+            {
+                return parent;
+            }
+            lastParent = parent;
+            parent = parent.parent;
+        }
+        return lastParent;
+    }
+
+    Vector3 GetContinuousEuler(Vector3 reference, Vector3 newEuler)
+    {
+        float x = Mathf.DeltaAngle(reference.x, newEuler.x) + reference.x;
+        float y = Mathf.DeltaAngle(reference.y, newEuler.y) + reference.y;
+        float z = Mathf.DeltaAngle(reference.z, newEuler.z) + reference.z;
+        return new Vector3(x, y, z);
+    }
+
     void GenerateAutoAnim(string toeName, string controllerName, bool isSplayed, Transform toeBone, bool isLeftFoot, int toeIndex)
     {
         if (toeBone == null) return;
