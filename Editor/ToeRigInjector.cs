@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -405,6 +405,15 @@ public class ToeRigInjector : EditorWindow
                 }
             }
 
+            bool isLeftFoot = extractedLayer.name.ToLower().Contains("left");
+            int toeIndex = int.Parse(new string(extractedLayer.name.Where(char.IsDigit).ToArray())) - 1;
+            Transform toeBone = isLeftFoot ? leftFootBones[toeIndex] : rightFootBones[toeIndex];
+
+            if (toeBone == null)
+            {
+                continue;
+            }
+
             var injectedLayer = new AnimatorControllerLayer
             {
                 name = extractedLayer.name,
@@ -412,10 +421,6 @@ public class ToeRigInjector : EditorWindow
                 stateMachine = new AnimatorStateMachine()
             };
             AssetDatabase.AddObjectToAsset(injectedLayer.stateMachine, controllerPath);
-
-            bool isLeftFoot = extractedLayer.name.ToLower().Contains("left");
-            int toeIndex = int.Parse(new string(extractedLayer.name.Where(char.IsDigit).ToArray())) - 1;
-            Transform toeBone = isLeftFoot ? leftFootBones[toeIndex] : rightFootBones[toeIndex];
 
             AnimatorState firstState = null;
 
