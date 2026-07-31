@@ -77,7 +77,6 @@ public class ToeRigInjector : EditorWindow
         public bool defaultBool;
     }
 
-    private const string jsonPath = "Assets/Editor/ToeConfiguration.json";
     private TextAsset jsonFile;
     private AnimatorController targetController;
     private string clipOutputFolder = "Assets/Animations/ToeBlendAnimations";
@@ -172,19 +171,24 @@ public class ToeRigInjector : EditorWindow
         EditorGUILayout.LabelField("Toe Tracking Compatibility Configurator", EditorStyles.boldLabel);
         EditorGUILayout.Space();
 
-        // Load pre-exported json file. We just provide this for the user.
+        // Load pre-exported json file dynamically (handles package installation)
         if (jsonFile == null)
         {
-            jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(jsonPath);
+            string[] guids = AssetDatabase.FindAssets("ToeConfiguration t:TextAsset");
+            if (guids.Length > 0)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+            }
         }
 
         if (jsonFile == null)
         {
-            EditorGUILayout.HelpBox("JSON file not found at:\n" + jsonPath, MessageType.Error);
+            EditorGUILayout.HelpBox("JSON file not found! Please ensure ToeConfiguration.json is imported.", MessageType.Error);
             return;
         }
 
-        EditorGUILayout.LabelField("Using JSON:", jsonPath);
+        EditorGUILayout.LabelField("Using JSON:", AssetDatabase.GetAssetPath(jsonFile));
         selectedExpParams = (VRCExpressionParameters)EditorGUILayout.ObjectField("VRC Expression Parameters", selectedExpParams, typeof(VRCExpressionParameters), false);
         targetController = (AnimatorController)EditorGUILayout.ObjectField("Target Animator Controller", targetController, typeof(AnimatorController), false);
         clipOutputFolder = EditorGUILayout.TextField("Clip Output Folder", clipOutputFolder);
