@@ -564,9 +564,7 @@ public class ToeRigInjector : EditorWindow
         // Clip names
         string bentClipName = controllerName + (isSplayed ? $"Splayed{toeName}Bent" : $"{toeName}Bent");
         string neutralClipName = controllerName + (isSplayed ? $"Splayed{toeName}Neutral" : $"{toeName}Neutral");
-        string bentClipName = toeName + (isSplayed ? "Splayed" : "") + "Bent";
-        string neutralClipName = toeName + (isSplayed ? "Splayed" : "") + "Neutral";
-        string tipClipName = toeName + (isSplayed ? "Splayed" : "") + "Tip";
+        string tipClipName = controllerName + (isSplayed ? $"SplayedTip{toeName}" : $"TipToes{toeName}");
 
         // Skip if already generated
         if (remappedClips.ContainsKey(bentClipName)) return;
