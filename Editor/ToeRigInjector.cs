@@ -212,17 +212,26 @@ public class ToeRigInjector : EditorWindow
         }
 
         EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Toe Bone Assignment", EditorStyles.boldLabel);
+
+        if (GUILayout.Button("Auto Fill Bones"))
+        {
+            AutoFillBones();
+        }
+
+        EditorGUILayout.Space();
+        string[] toeLabels = { "Big Toe", "Index Toe", "Middle Toe", "Ring Toe", "Little Toe" };
         EditorGUILayout.LabelField("Left Foot Toe Bones");
         for (int i = 0; i < 5; i++)
         {
-            leftFootBones[i] = (Transform)EditorGUILayout.ObjectField($"Toe {i + 1}", leftFootBones[i], typeof(Transform), true);
+            leftFootBones[i] = (Transform)EditorGUILayout.ObjectField(toeLabels[i], leftFootBones[i], typeof(Transform), true);
         }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Right Foot Toe Bones");
         for (int i = 0; i < 5; i++)
         {
-            rightFootBones[i] = (Transform)EditorGUILayout.ObjectField($"Toe {i + 1}", rightFootBones[i], typeof(Transform), true);
+            rightFootBones[i] = (Transform)EditorGUILayout.ObjectField(toeLabels[i], rightFootBones[i], typeof(Transform), true);
         }
 
         if (GUILayout.Button("Generate Toe Support"))
@@ -238,6 +247,211 @@ public class ToeRigInjector : EditorWindow
         }
 
         EditorGUILayout.EndScrollView();
+    }
+
+    void AutoFillBones()
+    {
+        // Find an avatar root in the scene (looks for an Animator component)
+        Animator[] animators = FindObjectsOfType<Animator>();
+        if (animators.Length == 0)
+        {
+            EditorUtility.DisplayDialog("Auto Fill Failed", "No Animator found in the scene. Please ensure your avatar is in the scene.", "OK");
+            return;
+        }
+
+        // Use the first animator found (or let the user know if multiple exist)
+        Transform avatarRoot = animators[0].transform;
+        if (animators.Length > 1)
+        {
+            Debug.LogWarning($"[ToeRig] Multiple Animators found. Using: {avatarRoot.name}");
+        }
+
+        // Collect all transforms under the avatar
+        var allTransforms = avatarRoot.GetComponentsInChildren<Transform>(true);
+
+        int leftFound = 0;
+        int rightFound = 0;
+
+        foreach (var t in allTransforms)
+        {
+            TryMatchToeBone(t, ref leftFound, ref rightFound);
+        }
+
+        if (leftFound == 0 && rightFound == 0)
+        {
+            EditorUtility.DisplayDialog("Auto Fill", "No toe bones found matching standard naming conventions.\n\nSupported patterns include:\n• Blender Rigify: toe.big.01.L\n• Unity Humanoid: LeftBigToe\n• Numbered: Toe1_L, Left_Toe_1\n• DEF- prefix variants", "OK");
+        }
+        else
+        {
+            Debug.Log($"[ToeRig] Auto Fill found {leftFound} left and {rightFound} right toe bones.");
+        }
+
+        Repaint();
+    }
+
+    void TryMatchToeBone(Transform t, ref int leftFound, ref int rightFound)
+    {
+        string name = t.name;
+        string nameLower = name.ToLower().Replace(" ", "");
+
+        // Strip common Blender prefixes (DEF-, MCH-, ORG-)
+        string stripped = nameLower;
+        if (stripped.StartsWith("def-") || stripped.StartsWith("mch-") || stripped.StartsWith("org-"))
+            stripped = stripped.Substring(4);
+
+        // Determine side (left/right)
+        bool isLeft = false;
+        bool isRight = false;
+
+        // Check side indicators
+        if (stripped.EndsWith(".l") || stripped.EndsWith("_l") || stripped.Contains("left") ||
+            stripped.StartsWith("l.") || stripped.StartsWith("l_") || stripped.StartsWith("l "))
+        {
+            isLeft = true;
+        }
+        else if (stripped.EndsWith(".r") || stripped.EndsWith("_r") || stripped.Contains("right") ||
+                 stripped.StartsWith("r.") || stripped.StartsWith("r_") || stripped.StartsWith("r "))
+        {
+            isRight = true;
+        }
+
+        if (!isLeft && !isRight) return;
+
+        // Determine which toe index (0=big, 1=index, 2=middle, 3=ring, 4=little/pinky)
+        int toeIndex = GetToeIndex(stripped);
+        if (toeIndex < 0) return;
+
+        // Only match the first segment (01 or 1), not intermediate/tip segments
+        if (IsIntermediateSegment(stripped)) return;
+
+        Transform[] targetArray = isLeft ? leftFootBones : rightFootBones;
+
+        // Only assign if the slot is empty (don't overwrite user assignments)
+        if (targetArray[toeIndex] == null)
+        {
+            targetArray[toeIndex] = t;
+            if (isLeft) leftFound++;
+            else rightFound++;
+            Debug.Log($"[ToeRig] Auto-mapped '{t.name}' -> {(isLeft ? "Left" : "Right")} toe index {toeIndex}");
+        }
+    }
+
+    int GetToeIndex(string nameLower)
+    {
+        // Big toe / Hallux / Toe 1
+        if (nameLower.Contains("big") || nameLower.Contains("hallux") || nameLower.Contains("thumb"))
+            return 0;
+
+        // Index toe / Toe 2 / Long toe
+        if (nameLower.Contains("index") || nameLower.Contains("long"))
+            return 1;
+
+        // Middle toe / Toe 3
+        if (nameLower.Contains("middle") || nameLower.Contains("mid"))
+            return 2;
+
+        // Ring toe / Toe 4 / Fourth
+        if (nameLower.Contains("ring") || nameLower.Contains("fourth"))
+            return 3;
+
+        // Little toe / Pinky / Small / Toe 5
+        if (nameLower.Contains("little") || nameLower.Contains("pinky") ||
+            nameLower.Contains("small") || nameLower.Contains("baby"))
+            return 4;
+
+        // Try numbered patterns: "toe1", "toe_1", "toe.1", "toes1"
+        return GetToeIndexFromNumber(nameLower);
+    }
+
+    int GetToeIndexFromNumber(string nameLower)
+    {
+        // Look for patterns like "toe1", "toe_1", "toe.1", "toes1", "toe01"
+        // We need to find a digit that represents the toe number
+        for (int i = 0; i < nameLower.Length; i++)
+        {
+            // Check for "toe" followed eventually by a digit
+            if (i + 3 < nameLower.Length && nameLower.Substring(i, 3) == "toe")
+            {
+                // Skip past "toe" or "toes"
+                int j = i + 3;
+                if (j < nameLower.Length && nameLower[j] == 's') j++;
+
+                // Skip separators and leading zeros
+                while (j < nameLower.Length && (nameLower[j] == '_' || nameLower[j] == '.' || nameLower[j] == '-' || nameLower[j] == '0'))
+                    j++;
+
+                // Check for side indicators between "toe" and the number (e.g., "toeleft1")
+                string remaining = nameLower.Substring(j);
+                if (remaining.StartsWith("left") || remaining.StartsWith("right"))
+                {
+                    j += remaining.StartsWith("left") ? 4 : 5;
+                    // Skip separators again
+                    while (j < nameLower.Length && (nameLower[j] == '_' || nameLower[j] == '.' || nameLower[j] == '-' || nameLower[j] == '0'))
+                        j++;
+                }
+
+                if (j < nameLower.Length && char.IsDigit(nameLower[j]))
+                {
+                    int digit = nameLower[j] - '0';
+                    if (digit >= 1 && digit <= 5)
+                        return digit - 1; // Convert 1-based to 0-based index
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    bool IsIntermediateSegment(string nameLower)
+    {
+        // Skip bones that are intermediate or tip segments
+        // Blender Rigify: ".02", ".03" etc.
+        // Other: "mid", "tip", "end", "distal", "intermediate" when used as segment names
+
+        // Check for Blender-style segment numbers (.02, .03, _02, _03)
+        for (int seg = 2; seg <= 5; seg++)
+        {
+            string dotSeg = $".{seg:D2}";   // .02, .03
+            string underSeg = $"_{seg:D2}"; // _02, _03
+            string dotSeg1 = $".{seg}";     // .2, .3
+            string underSeg1 = $"_{seg}";   // _2, _3
+
+            // Only match at positions that indicate a segment number, not the toe number
+            // The segment number typically comes after the toe identifier
+            if (nameLower.Contains("toe") && !nameLower.Contains($"toe{dotSeg}") && !nameLower.Contains($"toe{underSeg}"))
+            {
+                if (nameLower.EndsWith(dotSeg) || nameLower.EndsWith(underSeg) ||
+                    EndsWithBeforeSide(nameLower, dotSeg) || EndsWithBeforeSide(nameLower, underSeg))
+                    return true;
+                if (nameLower.EndsWith(dotSeg1) || nameLower.EndsWith(underSeg1) ||
+                    EndsWithBeforeSide(nameLower, dotSeg1) || EndsWithBeforeSide(nameLower, underSeg1))
+                    return true;
+            }
+        }
+
+        // Check for explicit segment names (but not "middle" which is a toe name)
+        if (nameLower.Contains("distal") || nameLower.Contains("intermediate") ||
+            nameLower.Contains("proximal2") || nameLower.Contains("phalanx2") ||
+            nameLower.Contains("phalanx3"))
+            return true;
+
+        // Check for "_end" suffix (Blender bone tips)
+        if (nameLower.EndsWith("_end") || nameLower.EndsWith(".end"))
+            return true;
+
+        return false;
+    }
+
+    bool EndsWithBeforeSide(string name, string suffix)
+    {
+        // Check if the name has the suffix just before a side indicator (.l, .r, _l, _r)
+        string[] sidePatterns = { ".l", ".r", "_l", "_r" };
+        foreach (var side in sidePatterns)
+        {
+            if (name.EndsWith(suffix + side))
+                return true;
+        }
+        return false;
     }
 
     void PreviewJson()
