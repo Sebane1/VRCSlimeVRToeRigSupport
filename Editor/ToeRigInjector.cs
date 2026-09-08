@@ -11,234 +11,380 @@ using Object = UnityEngine.Object;
 
 public class ToeRigInjector : EditorWindow
 {
-    [Serializable]
-    class ToeExtractResult
-    {
-        public List<ToeLayer> layers = new();
-        public List<ParameterInfo> parameters = new();
-    }
 
-    [Serializable]
-    class ToeLayer
-    {
-        public string name;
-        public List<StateInfo> states;
-        public List<TransitionInfo> transitions;
-    }
-
-    [Serializable]
-    class StateInfo
-    {
-        public string name;
-        public string clipName;
-        public string clipPath;
-        public bool isBlendTree = false;
-        public string blendParameter; // the Animator parameter driving the 1D blend tree
-        public List<BlendChild> blendChildren = new List<BlendChild>();
-    }
-
-    [Serializable]
-    class BlendChild
-    {
-        public string clipName;
-        public float threshold;
-    }
-
-    [Serializable]
-    class TransitionInfo
-    {
-        public string from;
-        public string to;
-        public bool isEntry;
-        public bool isExit;
-        public bool hasExitTime;
-        public float exitTime;
-        public float duration;
-        public bool fixedDuration;
-        public TransitionInterruptionSource interruptionSource;
-        public List<ConditionInfo> conditions = new();
-    }
-
-    [Serializable]
-    class ConditionInfo
-    {
-        public string parameter;
-        public AnimatorConditionMode mode;
-        public float threshold;
-    }
-
-    [Serializable]
-    class ParameterInfo
-    {
-        public string name;
-        public AnimatorControllerParameterType type;
-        public float defaultFloat;
-        public int defaultInt;
-        public bool defaultBool;
-    }
-
-    private TextAsset jsonFile;
     private AnimatorController targetController;
+    private VRCExpressionParameters selectedExpParams;
+
     private string clipOutputFolder = "Assets/Animations/ToeBlendAnimations";
     private Vector2 scroll;
-    private ToeExtractResult extracted;
-    private Dictionary<string, AnimationClip> remappedClips = new();
-    private VRCExpressionParameters selectedExpParams;
+
+    private readonly Transform[] leftFootBones = new Transform[5];
+    private readonly Transform[] rightFootBones = new Transform[5];
+
+    private readonly float[] leftFootSplay =
+        new float[5] { 15f, -3f, -7f, -15f, -30f };
+
+    private readonly float[] rightFootSplay =
+        new float[5] { -15f, 3f, 7f, 15f, 30f };
+
+    private float curlMinX = 90f;
+    private float curlMaxX = -90f;
+
+    private bool useOSCSmoothPath;
     private bool invertValues;
 
-    // Drag-and-drop bones for each foot (up to 5 toes)
-    private Transform[] leftFootBones = new Transform[5];
-    private Transform[] rightFootBones = new Transform[5];
+    private const int SplaySteps = 15;
 
-    // Max Z rotation offset (splay) per toe
-    private float[] leftFootSplay = new float[5] { 15, -3, -7, -15, -30f };
-    private float[] rightFootSplay = new float[5] { -15, 3f, 7f, 15f, 30f };
+    private const string NoToesParameter = "NoToes";
 
-    // Min/Max X rotation for curl (from neutral)
-    private float curlMinX = 90;
-    private float curlMaxX = -90;
-    private bool useOSCSmoothPath;
+    private static readonly string[] LeftCurlParameters =
+    {
+        "ToeLeft1Float",
+        "ToeLeft2Float",
+        "ToeLeft2Float",
+        "ToeLeft5Float",
+        "ToeLeft5Float"
+    };
+
+    private static readonly string[] RightCurlParameters =
+    {
+        "ToeRight1Float",
+        "ToeRight2Float",
+        "ToeRight2Float",
+        "ToeRight5Float",
+        "ToeRight5Float"
+    };
+
+    private static readonly string[] LeftSplayParameters =
+    {
+        "ToeSplayLeft1Float",
+        "ToeSplayLeft5Float",
+        "ToeSplayLeft5Float",
+        "ToeSplayLeft5Float",
+        "ToeSplayLeft5Float"
+    };
+
+    private static readonly string[] RightSplayParameters =
+    {
+        "ToeSplayRight1Float",
+        "ToeSplayRight5Float",
+        "ToeSplayRight5Float",
+        "ToeSplayRight5Float",
+        "ToeSplayRight5Float"
+    };
+    private const int EncodedLevels = 15;
+    private const int EncodedMiddle = 7;
+    private const int NeutralGrayCode = 4; // Gray(7) = 0100
+
+    public static readonly string[] LogicalParameters =
+    {
+        "ToeLeft1Float",
+        "ToeLeft2Float",
+        "ToeLeft5Float",
+        "ToeRight1Float",
+        "ToeRight2Float",
+        "ToeRight5Float",
+
+        "ToeSplayLeft1Float",
+        "ToeSplayLeft5Float",
+        "ToeSplayRight1Float",
+        "ToeSplayRight5Float",
+    };
 
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]
-    public static void Open() => GetWindow<ToeRigInjector>("Toe Tracking Configurator");
-
-    void OnEnable()
+    public static void Open()
     {
-        targetController = Prefs.GetObject<AnimatorController>("ToeRig_TargetController_" + EditorSceneManager.GetActiveScene().name);
+        GetWindow<ToeRigInjector>(
+            "Toe Tracking Configurator"
+        );
+    }
+
+    private void OnEnable()
+    {
+        targetController =
+            Prefs.GetObject<AnimatorController>(
+                "ToeRig_TargetController_" +
+                EditorSceneManager.GetActiveScene().name
+            );
+
         LoadConfig();
     }
-    void LoadConfig()
+
+    private void LoadConfig()
     {
-        if (targetController != null)
+        if (targetController == null)
         {
-            selectedExpParams = Prefs.GetObject<VRCExpressionParameters>("ToeRig_SelectedExpParams_" + targetController.name);
-
-            for (int i = 0; i < 5; i++)
-            {
-                leftFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Left_{i}_" + targetController.name);
-                rightFootBones[i] = Prefs.GetObject<Transform>($"ToeRig_Right_{i}_" + targetController.name);
-            }
-
-            useOSCSmoothPath = EditorPrefs.GetBool("ToeRig_OSCPath_" + targetController.name, false);
-            invertValues = EditorPrefs.GetBool("ToeRig_InvertValuePath_" + targetController.name, false);
-
-            for (int i = 0; i < 5; i++)
-            {
-                leftFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_LeftSplay_{i}_" + targetController.name, leftFootSplay[i]);
-                rightFootSplay[i] = EditorPrefs.GetFloat($"ToeRig_RightSplay_{i}_" + targetController.name, rightFootSplay[i]);
-            }
-            for (int i = 0; i < 5; i++)
-            {
-                leftFootBones[i] = BonePrefs.LoadBone($"ToeRig_Left_{i}_" + targetController.name);
-                rightFootBones[i] = BonePrefs.LoadBone($"ToeRig_Right_{i}_" + targetController.name);
-            }
-        }
-    }
-    void OnDisable()
-    {
-        if (targetController != null)
-        {
-            Prefs.SetObject("ToeRig_TargetController_" + EditorSceneManager.GetActiveScene().name, targetController);
-            Prefs.SetObject("ToeRig_SelectedExpParams_" + targetController.name, selectedExpParams);
-
-            for (int i = 0; i < 5; i++)
-            {
-                Prefs.SetObject($"ToeRig_Left_{i}_" + targetController.name, leftFootBones[i]);
-                Prefs.SetObject($"ToeRig_Right_{i}_" + targetController.name, rightFootBones[i]);
-            }
-            EditorPrefs.SetBool("ToeRig_OSCPath_" + targetController.name, useOSCSmoothPath);
-            EditorPrefs.SetBool("ToeRig_InvertValuePath_" + targetController.name, invertValues);
-
-            for (int i = 0; i < 5; i++)
-            {
-                EditorPrefs.SetFloat($"ToeRig_LeftSplay_{i}_" + targetController.name, leftFootSplay[i]);
-                EditorPrefs.SetFloat($"ToeRig_RightSplay_{i}_" + targetController.name, rightFootSplay[i]);
-            }
-            for (int i = 0; i < 5; i++)
-            {
-                BonePrefs.SaveBone($"ToeRig_Left_{i}_" + targetController.name, leftFootBones[i]);
-                BonePrefs.SaveBone($"ToeRig_Right_{i}_" + targetController.name, rightFootBones[i]);
-            }
-        }
-    }
-
-
-    void OnGUI()
-    {
-        scroll = EditorGUILayout.BeginScrollView(scroll);
-
-        EditorGUILayout.LabelField("Toe Tracking Compatibility Configurator", EditorStyles.boldLabel);
-        EditorGUILayout.Space();
-
-        // Load pre-exported json file dynamically (handles package installation)
-        if (jsonFile == null)
-        {
-            string[] guids = AssetDatabase.FindAssets("ToeConfiguration t:TextAsset");
-            if (guids.Length > 0)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                jsonFile = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-            }
-        }
-
-        if (jsonFile == null)
-        {
-            EditorGUILayout.HelpBox("JSON file not found! Please ensure ToeConfiguration.json is imported.", MessageType.Error);
             return;
         }
 
-        EditorGUILayout.LabelField("Using JSON:", AssetDatabase.GetAssetPath(jsonFile));
-        selectedExpParams = (VRCExpressionParameters)EditorGUILayout.ObjectField("VRC Expression Parameters", selectedExpParams, typeof(VRCExpressionParameters), false);
-        targetController = (AnimatorController)EditorGUILayout.ObjectField("Target Animator Controller", targetController, typeof(AnimatorController), false);
-        clipOutputFolder = EditorGUILayout.TextField("Clip Output Folder", clipOutputFolder);
-        EditorGUILayout.Space();
+        selectedExpParams =
+            Prefs.GetObject<VRCExpressionParameters>(
+                "ToeRig_SelectedExpParams_" +
+                targetController.name
+            );
 
-        useOSCSmoothPath = EditorGUILayout.Toggle($"Uses OSC Smooth", useOSCSmoothPath);
-        EditorGUILayout.Space();
-        invertValues = EditorGUILayout.Toggle($"Invert Values", invertValues);
-        EditorGUILayout.Space();
+        useOSCSmoothPath =
+            EditorPrefs.GetBool(
+                "ToeRig_OSCPath_" +
+                targetController.name,
+                false
+            );
 
-        EditorGUILayout.LabelField("Left Foot Splay (big-to-pinky)");
+        invertValues =
+            EditorPrefs.GetBool(
+                "ToeRig_InvertValuePath_" +
+                targetController.name,
+                false
+            );
+
         for (int i = 0; i < 5; i++)
         {
-            leftFootSplay[i] = EditorGUILayout.FloatField($"Toe {i + 1}", leftFootSplay[i]);
+            leftFootSplay[i] =
+                EditorPrefs.GetFloat(
+                    $"ToeRig_LeftSplay_{i}_" +
+                    targetController.name,
+                    leftFootSplay[i]
+                );
+
+            rightFootSplay[i] =
+                EditorPrefs.GetFloat(
+                    $"ToeRig_RightSplay_{i}_" +
+                    targetController.name,
+                    rightFootSplay[i]
+                );
+
+            leftFootBones[i] =
+                BonePrefs.LoadBone(
+                    $"ToeRig_Left_{i}_" +
+                    targetController.name
+                );
+
+            rightFootBones[i] =
+                BonePrefs.LoadBone(
+                    $"ToeRig_Right_{i}_" +
+                    targetController.name
+                );
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (targetController == null)
+        {
+            return;
+        }
+
+        Prefs.SetObject(
+            "ToeRig_TargetController_" +
+            EditorSceneManager.GetActiveScene().name,
+            targetController
+        );
+
+        Prefs.SetObject(
+            "ToeRig_SelectedExpParams_" +
+            targetController.name,
+            selectedExpParams
+        );
+
+        EditorPrefs.SetBool(
+            "ToeRig_OSCPath_" +
+            targetController.name,
+            useOSCSmoothPath
+        );
+
+        EditorPrefs.SetBool(
+            "ToeRig_InvertValuePath_" +
+            targetController.name,
+            invertValues
+        );
+
+        for (int i = 0; i < 5; i++)
+        {
+            EditorPrefs.SetFloat(
+                $"ToeRig_LeftSplay_{i}_" +
+                targetController.name,
+                leftFootSplay[i]
+            );
+
+            EditorPrefs.SetFloat(
+                $"ToeRig_RightSplay_{i}_" +
+                targetController.name,
+                rightFootSplay[i]
+            );
+
+            BonePrefs.SaveBone(
+                $"ToeRig_Left_{i}_" +
+                targetController.name,
+                leftFootBones[i]
+            );
+
+            BonePrefs.SaveBone(
+                $"ToeRig_Right_{i}_" +
+                targetController.name,
+                rightFootBones[i]
+            );
+        }
+    }
+
+    private void OnGUI()
+    {
+        scroll =
+            EditorGUILayout.BeginScrollView(scroll);
+
+        EditorGUILayout.LabelField(
+            "Toe Tracking Compatibility Configurator",
+            EditorStyles.boldLabel
+        );
+
+        EditorGUILayout.Space();
+
+        selectedExpParams =
+            (VRCExpressionParameters)
+            EditorGUILayout.ObjectField(
+                "VRC Expression Parameters",
+                selectedExpParams,
+                typeof(VRCExpressionParameters),
+                false
+            );
+
+        AnimatorController newController =
+            (AnimatorController)
+            EditorGUILayout.ObjectField(
+                "Target Animator Controller",
+                targetController,
+                typeof(AnimatorController),
+                false
+            );
+
+        if (newController != targetController)
+        {
+            targetController = newController;
+            LoadConfig();
+        }
+
+        clipOutputFolder =
+            EditorGUILayout.TextField(
+                "Clip Output Folder",
+                clipOutputFolder
+            );
+
+        EditorGUILayout.Space();
+
+        useOSCSmoothPath =
+            EditorGUILayout.Toggle(
+                "Uses OSC Smooth",
+                useOSCSmoothPath
+            );
+
+        invertValues =
+            EditorGUILayout.Toggle(
+                "Invert Values",
+                invertValues
+            );
+
+        EditorGUILayout.Space();
+
+        EditorGUILayout.LabelField(
+            "Left Foot Maximum Splay (big-to-pinky)"
+        );
+
+        for (int i = 0; i < 5; i++)
+        {
+            leftFootSplay[i] =
+                EditorGUILayout.FloatField(
+                    $"Toe {i + 1}",
+                    leftFootSplay[i]
+                );
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Right Foot Splay (big-to-pinky)");
+
+        EditorGUILayout.LabelField(
+            "Right Foot Maximum Splay (big-to-pinky)"
+        );
+
         for (int i = 0; i < 5; i++)
         {
-            rightFootSplay[i] = EditorGUILayout.FloatField($"Toe {i + 1}", rightFootSplay[i]);
+            rightFootSplay[i] =
+                EditorGUILayout.FloatField(
+                    $"Toe {i + 1}",
+                    rightFootSplay[i]
+                );
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Toe Bone Assignment", EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox(
+            "Continuous splay uses ToeSplay*1Float for the big toe and " +
+            "ToeSplay*5Float for toes 2-5. The legacy ToeSplay Bool " +
+            "parameters are no longer used for motion.",
+            MessageType.Info
+        );
+
+        EditorGUILayout.Space();
+
+        EditorGUILayout.LabelField(
+            "Toe Bone Assignment",
+            EditorStyles.boldLabel
+        );
 
         if (GUILayout.Button("Auto Fill Bones"))
         {
             AutoFillBones();
         }
 
+        string[] toeLabels =
+        {
+            "Big Toe",
+            "Index Toe",
+            "Middle Toe",
+            "Ring Toe",
+            "Little Toe"
+        };
+
         EditorGUILayout.Space();
-        string[] toeLabels = { "Big Toe", "Index Toe", "Middle Toe", "Ring Toe", "Little Toe" };
         EditorGUILayout.LabelField("Left Foot Toe Bones");
+
         for (int i = 0; i < 5; i++)
         {
-            leftFootBones[i] = (Transform)EditorGUILayout.ObjectField(toeLabels[i], leftFootBones[i], typeof(Transform), true);
+            leftFootBones[i] =
+                (Transform)
+                EditorGUILayout.ObjectField(
+                    toeLabels[i],
+                    leftFootBones[i],
+                    typeof(Transform),
+                    true
+                );
         }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Right Foot Toe Bones");
+
         for (int i = 0; i < 5; i++)
         {
-            rightFootBones[i] = (Transform)EditorGUILayout.ObjectField(toeLabels[i], rightFootBones[i], typeof(Transform), true);
+            rightFootBones[i] =
+                (Transform)
+                EditorGUILayout.ObjectField(
+                    toeLabels[i],
+                    rightFootBones[i],
+                    typeof(Transform),
+                    true
+                );
         }
+
+        EditorGUILayout.Space();
 
         if (GUILayout.Button("Generate Toe Support"))
         {
-            if (jsonFile == null || targetController == null)
+            if (
+                targetController == null ||
+                selectedExpParams == null)
             {
-                EditorUtility.DisplayDialog("Missing data", "Please target AnimatorController.", "OK");
+                EditorUtility.DisplayDialog(
+                    "Missing data",
+                    "Please assign both the AnimatorController and VRC Expression Parameters.",
+                    "OK"
+                );
             }
             else
             {
@@ -249,152 +395,1371 @@ public class ToeRigInjector : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
-    void AutoFillBones()
+    private void ApplyInjection()
     {
-        // Find an avatar root in the scene (looks for an Animator component)
-        Animator[] animators = FindObjectsOfType<Animator>();
-        if (animators.Length == 0)
+        EnsureFolder(clipOutputFolder);
+
+        EnsureAnimatorParameter(
+            NoToesParameter,
+            AnimatorControllerParameterType.Bool
+        );
+
+        EnsureExpressionBoolParameter(
+            NoToesParameter,
+            true
+        );
+
+        Install(
+            targetController,
+            selectedExpParams
+        );
+
+        string controllerPath =
+            AssetDatabase.GetAssetPath(
+                targetController
+            );
+
+        if (string.IsNullOrEmpty(controllerPath))
         {
-            EditorUtility.DisplayDialog("Auto Fill Failed", "No Animator found in the scene. Please ensure your avatar is in the scene.", "OK");
+            Debug.LogError(
+                "[ToeRig] Target controller is not a saved asset."
+            );
+
             return;
         }
 
-        // Use the first animator found (or let the user know if multiple exist)
-        Transform avatarRoot = animators[0].transform;
-        if (animators.Length > 1)
+        var layers =
+            targetController.layers.ToList();
+
+        for (int toeIndex = 0; toeIndex < 5; toeIndex++)
         {
-            Debug.LogWarning($"[ToeRig] Multiple Animators found. Using: {avatarRoot.name}");
+            GenerateSideToeIfAssigned(
+                true,
+                toeIndex,
+                leftFootBones[toeIndex],
+                LeftCurlParameters[toeIndex],
+                LeftSplayParameters[toeIndex],
+                controllerPath,
+                layers
+            );
+
+            GenerateSideToeIfAssigned(
+                false,
+                toeIndex,
+                rightFootBones[toeIndex],
+                RightCurlParameters[toeIndex],
+                RightSplayParameters[toeIndex],
+                controllerPath,
+                layers
+            );
         }
 
-        // Collect all transforms under the avatar
-        var allTransforms = avatarRoot.GetComponentsInChildren<Transform>(true);
+        targetController.layers =
+            layers.ToArray();
+
+        EditorUtility.SetDirty(
+            targetController
+        );
+
+        EditorUtility.SetDirty(
+            selectedExpParams
+        );
+
+        AssetDatabase.SaveAssets();
+
+        AssetDatabase.ImportAsset(
+            controllerPath,
+            ImportAssetOptions.ForceUpdate
+        );
+
+        AssetDatabase.Refresh();
+
+        EditorUtility.DisplayDialog(
+            "Toe configuration completed!",
+            "Toe support generated without ToeConfiguration.json.",
+            "OK"
+        );
+    }
+
+    private void GenerateSideToeIfAssigned(
+        bool isLeftFoot,
+        int toeIndex,
+        Transform toeBone,
+        string curlParameter,
+        string splayParameter,
+        string controllerPath,
+        List<AnimatorControllerLayer> layers)
+    {
+        string sideName =
+            isLeftFoot
+                ? "Left"
+                : "Right";
+
+        string layerName =
+            $"Toe{sideName}{toeIndex + 1}";
+
+        AnimatorControllerLayer oldLayer =
+            layers.FirstOrDefault(
+                l =>
+                    l.name ==
+                    layerName
+            );
+
+        if (oldLayer != null)
+        {
+            layers.Remove(
+                oldLayer
+            );
+
+            if (oldLayer.stateMachine != null)
+            {
+                DestroyStateMachineRecursive(
+                    oldLayer.stateMachine
+                );
+            }
+        }
+
+        if (toeBone == null)
+        {
+            return;
+        }
+
+        EnsureRawUnsyncedFloat(
+            curlParameter
+        );
+
+        EnsureRawUnsyncedFloat(
+            splayParameter
+        );
+
+        string resolvedCurlParameter =
+          GetMotionParameter(
+                curlParameter,
+                useOSCSmoothPath
+            );
+
+        string resolvedSplayParameter =
+          GetMotionParameter(
+                splayParameter,
+                useOSCSmoothPath
+            );
+
+        EnsureAnimatorParameter(
+            resolvedCurlParameter,
+            AnimatorControllerParameterType.Float
+        );
+
+        EnsureAnimatorParameter(
+            resolvedSplayParameter,
+            AnimatorControllerParameterType.Float
+        );
+
+        AnimatorControllerLayer newLayer =
+            GenerateToeMotionLayer(
+                layerName,
+                toeBone,
+                isLeftFoot,
+                toeIndex,
+                resolvedCurlParameter,
+                resolvedSplayParameter,
+                controllerPath
+            );
+
+        layers.Add(
+            newLayer
+        );
+    }
+
+    private AnimatorControllerLayer GenerateToeMotionLayer(
+        string layerName,
+        Transform toeBone,
+        bool isLeftFoot,
+        int toeIndex,
+        string curlParameter,
+        string splayParameter,
+        string controllerPath)
+    {
+        var stateMachine =
+            new AnimatorStateMachine
+            {
+                name = layerName
+            };
+
+        AssetDatabase.AddObjectToAsset(
+            stateMachine,
+            controllerPath
+        );
+
+        AnimatorState tracking =
+            stateMachine.AddState(
+                "Tracking"
+            );
+
+        tracking.writeDefaultValues = true;
+
+        BlendTree splayTree =
+            GenerateNestedSplayCurlTree(
+                layerName,
+                toeBone,
+                isLeftFoot,
+                toeIndex,
+                curlParameter,
+                splayParameter,
+                controllerPath
+            );
+
+        tracking.motion =
+            splayTree;
+
+        AnimatorState noToes =
+            stateMachine.AddState(
+                "NoToes"
+            );
+
+        noToes.writeDefaultValues = true;
+
+        AnimationClip neutral =
+            CreateCombinedToeClip(
+                layerName +
+                "_DisabledNeutral",
+                toeBone,
+                0f,
+                0f
+            );
+
+        SaveGeneratedClip(
+            neutral,
+            layerName +
+            "_DisabledNeutral"
+        );
+
+        noToes.motion =
+            AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                GetClipPath(
+                    layerName +
+                    "_DisabledNeutral"
+                )
+            );
+
+        stateMachine.defaultState =
+            tracking;
+
+        EnsureAnimatorParameter(
+            "NoToes",
+            AnimatorControllerParameterType.Bool
+        );
+
+        AnimatorStateTransition disable =
+            tracking.AddTransition(
+                noToes
+            );
+
+        disable.hasExitTime = false;
+        disable.duration = 0.25f;
+        disable.hasFixedDuration = true;
+
+        disable.AddCondition(
+            AnimatorConditionMode.If,
+            0f,
+            NoToesParameter
+        );
+
+        AnimatorStateTransition enable =
+            noToes.AddTransition(
+                tracking
+            );
+
+        enable.hasExitTime = false;
+        enable.duration = 0.25f;
+        enable.hasFixedDuration = true;
+
+        enable.AddCondition(
+            AnimatorConditionMode.IfNot,
+            0f,
+            NoToesParameter
+        );
+
+        EditorUtility.SetDirty(
+            disable
+        );
+
+        EditorUtility.SetDirty(
+            enable
+        );
+
+        EditorUtility.SetDirty(
+            tracking
+        );
+
+        EditorUtility.SetDirty(
+            noToes
+        );
+
+        EditorUtility.SetDirty(
+            stateMachine
+        );
+
+        return new AnimatorControllerLayer
+        {
+            name = layerName,
+            defaultWeight = 1f,
+            stateMachine = stateMachine
+        };
+    }
+
+    private BlendTree GenerateNestedSplayCurlTree(
+        string layerName,
+        Transform toeBone,
+        bool isLeftFoot,
+        int toeIndex,
+        string curlParameter,
+        string splayParameter,
+        string controllerPath)
+    {
+        var outer =
+            new BlendTree
+            {
+                name =
+                    layerName +
+                    "_SplayCurl",
+                blendType =
+                    BlendTreeType.Simple1D,
+                useAutomaticThresholds =
+                    false,
+                blendParameter =
+                    splayParameter
+            };
+
+        AssetDatabase.AddObjectToAsset(
+            outer,
+            controllerPath
+        );
+
+        float maximumSplay =
+            Mathf.Abs(
+                GetToeSplay(
+                    isLeftFoot,
+                    toeIndex
+                )
+            );
+
+        for (
+            int splayIndex = 0;
+            splayIndex < SplaySteps;
+            splayIndex++)
+        {
+            float normalizedSplay =
+                Mathf.Lerp(
+                    -1f,
+                    1f,
+                    splayIndex /
+                    (float)(SplaySteps - 1)
+                );
+
+            float splayDegrees =
+                normalizedSplay *
+                maximumSplay;
+
+            if (invertValues)
+            {
+                splayDegrees =
+                    -splayDegrees;
+            }
+
+            var curlTree =
+                new BlendTree
+                {
+                    name =
+                        layerName +
+                        $"_Splay_{splayIndex:00}_Curl",
+                    blendType =
+                        BlendTreeType.Simple1D,
+                    useAutomaticThresholds =
+                        false,
+                    blendParameter =
+                        curlParameter
+                };
+
+            AssetDatabase.AddObjectToAsset(
+                curlTree,
+                controllerPath
+            );
+
+            string prefix =
+                layerName +
+                $"_Splay_{splayIndex:00}";
+
+            AnimationClip bent =
+                CreateCombinedToeClip(
+                    prefix +
+                    "_Bent",
+                    toeBone,
+                    -1f,
+                    splayDegrees
+                );
+
+            AnimationClip neutral =
+                CreateCombinedToeClip(
+                    prefix +
+                    "_Neutral",
+                    toeBone,
+                    0f,
+                    splayDegrees
+                );
+
+            AnimationClip tip =
+                CreateCombinedToeClip(
+                    prefix +
+                    "_Tip",
+                    toeBone,
+                    1f,
+                    splayDegrees
+                );
+
+            SaveGeneratedClip(
+                bent,
+                prefix +
+                "_Bent"
+            );
+
+            SaveGeneratedClip(
+                neutral,
+                prefix +
+                "_Neutral"
+            );
+
+            SaveGeneratedClip(
+                tip,
+                prefix +
+                "_Tip"
+            );
+
+            curlTree.AddChild(
+                AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                    GetClipPath(
+                        prefix +
+                        "_Bent"
+                    )
+                ),
+                -1f
+            );
+
+            curlTree.AddChild(
+                AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                    GetClipPath(
+                        prefix +
+                        "_Neutral"
+                    )
+                ),
+                0f
+            );
+
+            curlTree.AddChild(
+                AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                    GetClipPath(
+                        prefix +
+                        "_Tip"
+                    )
+                ),
+                1f
+            );
+
+            outer.AddChild(
+                curlTree,
+                normalizedSplay
+            );
+
+            EditorUtility.SetDirty(
+                curlTree
+            );
+        }
+
+        EditorUtility.SetDirty(
+            outer
+        );
+
+        return outer;
+    }
+
+    private AnimationClip CreateCombinedToeClip(
+        string clipName,
+        Transform toeBone,
+        float normalizedCurl,
+        float splayDegrees)
+    {
+        var clip =
+            new AnimationClip
+            {
+                name = clipName,
+                frameRate = 60f,
+                wrapMode = WrapMode.Loop
+            };
+
+        List<Transform> toeTransforms =
+            new List<Transform>
+            {
+                toeBone
+            };
+
+        if (toeBone.childCount > 0)
+        {
+            Transform child =
+                toeBone.GetChild(0);
+
+            if (
+                !child.name.EndsWith(
+                    "_end",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                toeTransforms.Add(child);
+            }
+        }
+
+        Transform avatarRoot =
+            GetAvatarRoot(toeBone);
+
+        Vector3 curlAxis =
+            avatarRoot != null
+                ? avatarRoot.right
+                : Vector3.right;
+
+        Vector3 splayAxis =
+            avatarRoot != null
+                ? avatarRoot.up
+                : Vector3.up;
+
+        for (
+            int i = 0;
+            i < toeTransforms.Count;
+            i++)
+        {
+            Transform segment =
+                toeTransforms[i];
+
+            Vector3 originalEuler =
+                segment.localEulerAngles;
+
+            Quaternion originalRotation =
+                segment.rotation;
+
+            float curlAngle;
+
+            if (normalizedCurl < 0f)
+            {
+                curlAngle =
+                    Mathf.Abs(normalizedCurl) *
+                    (invertValues
+                        ? -curlMinX
+                        : curlMinX) /
+                    toeTransforms.Count;
+            }
+            else
+            {
+                curlAngle =
+                    i == 0
+                        ? normalizedCurl *
+                          (invertValues
+                              ? -curlMaxX
+                              : curlMaxX)
+                        : 0f;
+            }
+
+            float segmentSplay =
+                i == 0
+                    ? splayDegrees
+                    : 0f;
+
+            segment.Rotate(
+                curlAxis,
+                curlAngle,
+                Space.World
+            );
+
+            segment.Rotate(
+                splayAxis,
+                segmentSplay,
+                Space.World
+            );
+
+            Vector3 resultEuler =
+                GetContinuousEuler(
+                    originalEuler,
+                    segment.localEulerAngles
+                );
+
+            segment.rotation =
+                originalRotation;
+
+            SetConstantEulerCurves(
+                clip,
+                GetBonePath(segment),
+                resultEuler
+            );
+        }
+
+        return clip;
+    }
+
+    private void SetConstantEulerCurves(
+        AnimationClip clip,
+        string path,
+        Vector3 euler)
+    {
+        clip.SetCurve(
+            path,
+            typeof(Transform),
+            "localEulerAnglesRaw.x",
+            ConstantCurve(euler.x)
+        );
+
+        clip.SetCurve(
+            path,
+            typeof(Transform),
+            "localEulerAnglesRaw.y",
+            ConstantCurve(euler.y)
+        );
+
+        clip.SetCurve(
+            path,
+            typeof(Transform),
+            "localEulerAnglesRaw.z",
+            ConstantCurve(euler.z)
+        );
+    }
+
+    private static AnimationCurve ConstantCurve(
+        float value)
+    {
+        return new AnimationCurve(
+            new Keyframe(0f, value),
+            new Keyframe(1f, value)
+        );
+    }
+
+
+
+    private void EnsureRawUnsyncedFloat(
+        string parameter)
+    {
+        EnsureAnimatorParameter(
+            parameter,
+            AnimatorControllerParameterType.Float
+        );
+
+        var parameters =
+            selectedExpParams.parameters?.ToList() ??
+            new List<VRCExpressionParameters.Parameter>();
+
+        int index =
+            parameters.FindIndex(
+                p =>
+                    p.name ==
+                    parameter
+            );
+
+        VRCExpressionParameters.Parameter exp;
+
+        if (index >= 0)
+        {
+            exp =
+                parameters[index];
+        }
+        else
+        {
+            exp =
+                new VRCExpressionParameters.Parameter
+                {
+                    name = parameter
+                };
+
+            parameters.Add(exp);
+            index =
+                parameters.Count - 1;
+        }
+
+        exp.valueType =
+            VRCExpressionParameters.ValueType.Float;
+
+        exp.networkSynced = false;
+        exp.saved = false;
+        exp.defaultValue = 0f;
+
+        parameters[index] =
+            exp;
+
+        selectedExpParams.parameters =
+            parameters.ToArray();
+
+        EditorUtility.SetDirty(
+            selectedExpParams
+        );
+    }
+
+    private void EnsureExpressionBoolParameter(
+        string parameter,
+        bool networkSynced)
+    {
+        var parameters =
+            selectedExpParams.parameters?.ToList() ??
+            new List<VRCExpressionParameters.Parameter>();
+
+        int index =
+            parameters.FindIndex(
+                p => p.name == parameter
+            );
+
+        VRCExpressionParameters.Parameter expressionParameter;
+
+        if (index >= 0)
+        {
+            expressionParameter =
+                parameters[index];
+        }
+        else
+        {
+            expressionParameter =
+                new VRCExpressionParameters.Parameter
+                {
+                    name = parameter
+                };
+
+            parameters.Add(
+                expressionParameter
+            );
+
+            index =
+                parameters.Count - 1;
+        }
+
+        expressionParameter.valueType =
+            VRCExpressionParameters.ValueType.Bool;
+
+        expressionParameter.networkSynced =
+            networkSynced;
+
+        expressionParameter.saved = false;
+        expressionParameter.defaultValue = 0f;
+
+        parameters[index] =
+            expressionParameter;
+
+        selectedExpParams.parameters =
+            parameters.ToArray();
+
+        EditorUtility.SetDirty(
+            selectedExpParams
+        );
+    }
+
+    private void EnsureAnimatorParameter(
+        string parameter,
+        AnimatorControllerParameterType type)
+    {
+        AnimatorControllerParameter[] matches =
+            targetController.parameters
+                .Where(
+                    p =>
+                        p.name ==
+                        parameter
+                )
+                .ToArray();
+
+        if (
+            matches.Length == 1 &&
+            matches[0].type == type)
+        {
+            return;
+        }
+
+        for (
+            int i =
+                targetController.parameters.Length - 1;
+            i >= 0;
+            i--)
+        {
+            if (
+                targetController.parameters[i].name ==
+                parameter)
+            {
+                targetController.RemoveParameter(i);
+            }
+        }
+
+        targetController.AddParameter(
+            parameter,
+            type
+        );
+
+        EditorUtility.SetDirty(
+            targetController
+        );
+    }
+
+
+    private float GetToeSplay(
+        bool isLeftFoot,
+        int toeIndex)
+    {
+        toeIndex =
+            Mathf.Clamp(
+                toeIndex,
+                0,
+                4
+            );
+
+        return isLeftFoot
+            ? Mathf.Clamp(
+                leftFootSplay[toeIndex],
+                -180f,
+                180f
+            )
+            : Mathf.Clamp(
+                rightFootSplay[toeIndex],
+                -180f,
+                180f
+            );
+    }
+
+    private Transform GetAvatarRoot(
+        Transform t)
+    {
+        if (t == null)
+        {
+            return null;
+        }
+
+        Transform current = t;
+
+        while (current != null)
+        {
+            if (
+                current.GetComponent<Animator>() !=
+                null)
+            {
+                return current;
+            }
+
+            current =
+                current.parent;
+        }
+
+        return t.root;
+    }
+
+    private static Vector3 GetContinuousEuler(
+        Vector3 reference,
+        Vector3 newEuler)
+    {
+        return new Vector3(
+            Mathf.DeltaAngle(
+                reference.x,
+                newEuler.x
+            ) +
+            reference.x,
+
+            Mathf.DeltaAngle(
+                reference.y,
+                newEuler.y
+            ) +
+            reference.y,
+
+            Mathf.DeltaAngle(
+                reference.z,
+                newEuler.z
+            ) +
+            reference.z
+        );
+    }
+
+    private void SaveGeneratedClip(
+        AnimationClip clip,
+        string clipName)
+    {
+        SaveOrOverwriteClip(
+            clip,
+            GetClipPath(clipName)
+        );
+    }
+
+    private string GetClipPath(
+        string clipName)
+    {
+        string safeName =
+            string.Concat(
+                clipName.Select(
+                    c =>
+                        Path.GetInvalidFileNameChars()
+                            .Contains(c)
+                            ? '_'
+                            : c
+                )
+            );
+
+        return
+            $"{clipOutputFolder}/{targetController.name}_{safeName}.anim";
+    }
+
+    private static void EnsureFolder(
+        string folder)
+    {
+        if (
+            AssetDatabase.IsValidFolder(
+                folder))
+        {
+            return;
+        }
+
+        string normalized =
+            folder.Replace("\\", "/")
+                .TrimEnd('/');
+
+        string[] parts =
+            normalized.Split('/');
+
+        if (
+            parts.Length == 0 ||
+            parts[0] != "Assets")
+        {
+            return;
+        }
+
+        string current =
+            "Assets";
+
+        for (
+            int i = 1;
+            i < parts.Length;
+            i++)
+        {
+            string next =
+                current +
+                "/" +
+                parts[i];
+
+            if (
+                !AssetDatabase.IsValidFolder(
+                    next))
+            {
+                AssetDatabase.CreateFolder(
+                    current,
+                    parts[i]
+                );
+            }
+
+            current =
+                next;
+        }
+    }
+
+    private static void SaveOrOverwriteClip(
+        AnimationClip clip,
+        string fullPath)
+    {
+        string directory =
+            Path.GetDirectoryName(
+                fullPath
+            );
+
+        if (
+            !Directory.Exists(
+                directory))
+        {
+            Directory.CreateDirectory(
+                directory
+            );
+
+            AssetDatabase.Refresh();
+        }
+
+        AnimationClip existing =
+            AssetDatabase.LoadAssetAtPath
+                <AnimationClip>(
+                    fullPath
+                );
+
+        if (existing != null)
+        {
+            AssetDatabase.DeleteAsset(
+                fullPath
+            );
+        }
+
+        AssetDatabase.CreateAsset(
+            clip,
+            fullPath
+        );
+
+        AssetDatabase.ImportAsset(
+            fullPath,
+            ImportAssetOptions.ForceUpdate
+        );
+    }
+
+    private string GetBonePath(
+        Transform t)
+    {
+        if (t == null)
+        {
+            return "";
+        }
+
+        string path =
+            t.name;
+
+        Transform parent =
+            t.parent;
+
+        while (parent != null)
+        {
+            path =
+                parent.name +
+                "/" +
+                path;
+
+            if (
+                parent.name.StartsWith(
+                    "Armature",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            parent =
+                parent.parent;
+        }
+
+        return path;
+    }
+
+    private static void DestroyStateMachineRecursive(
+        AnimatorStateMachine stateMachine)
+    {
+        if (stateMachine == null)
+        {
+            return;
+        }
+
+        foreach (
+            ChildAnimatorState child
+            in stateMachine.states)
+        {
+            AnimatorState state =
+                child.state;
+
+            if (
+                state.motion is BlendTree tree)
+            {
+                DestroyBlendTreeRecursive(
+                    tree
+                );
+            }
+
+            foreach (
+                AnimatorStateTransition transition
+                in state.transitions)
+            {
+                Object.DestroyImmediate(
+                    transition,
+                    true
+                );
+            }
+
+            Object.DestroyImmediate(
+                state,
+                true
+            );
+        }
+
+        foreach (
+            AnimatorStateTransition transition
+            in stateMachine.anyStateTransitions)
+        {
+            Object.DestroyImmediate(
+                transition,
+                true
+            );
+        }
+
+        foreach (
+            AnimatorTransition transition
+            in stateMachine.entryTransitions)
+        {
+            Object.DestroyImmediate(
+                transition,
+                true
+            );
+        }
+
+        foreach (
+            ChildAnimatorStateMachine child
+            in stateMachine.stateMachines)
+        {
+            DestroyStateMachineRecursive(
+                child.stateMachine
+            );
+        }
+
+        Object.DestroyImmediate(
+            stateMachine,
+            true
+        );
+    }
+
+    private static void DestroyBlendTreeRecursive(
+        BlendTree tree)
+    {
+        if (tree == null)
+        {
+            return;
+        }
+
+        foreach (
+            ChildMotion child
+            in tree.children)
+        {
+            if (
+                child.motion is BlendTree nested)
+            {
+                DestroyBlendTreeRecursive(
+                    nested
+                );
+            }
+        }
+
+        Object.DestroyImmediate(
+            tree,
+            true
+        );
+    }
+
+    private void AutoFillBones()
+    {
+        Animator[] animators =
+            FindObjectsOfType<Animator>();
+
+        if (animators.Length == 0)
+        {
+            EditorUtility.DisplayDialog(
+                "Auto Fill Failed",
+                "No Animator found in the scene.",
+                "OK"
+            );
+
+            return;
+        }
+
+        Transform avatarRoot =
+            animators[0].transform;
 
         int leftFound = 0;
         int rightFound = 0;
 
-        foreach (var t in allTransforms)
+        foreach (
+            Transform t
+            in avatarRoot.GetComponentsInChildren
+                <Transform>(true))
         {
-            TryMatchToeBone(t, ref leftFound, ref rightFound);
+            TryMatchToeBone(
+                t,
+                ref leftFound,
+                ref rightFound
+            );
         }
 
-        if (leftFound == 0 && rightFound == 0)
-        {
-            EditorUtility.DisplayDialog("Auto Fill", "No toe bones found matching standard naming conventions.\n\nSupported patterns include:\n• Blender Rigify: toe.big.01.L\n• Unity Humanoid: LeftBigToe\n• Numbered: Toe1_L, Left_Toe_1\n• DEF- prefix variants", "OK");
-        }
-        else
-        {
-            Debug.Log($"[ToeRig] Auto Fill found {leftFound} left and {rightFound} right toe bones.");
-        }
+        Debug.Log(
+            $"[ToeRig] Auto Fill found {leftFound} left and {rightFound} right toe bones."
+        );
 
         Repaint();
     }
 
-    void TryMatchToeBone(Transform t, ref int leftFound, ref int rightFound)
+    private void TryMatchToeBone(
+        Transform t,
+        ref int leftFound,
+        ref int rightFound)
     {
-        string name = t.name;
-        string nameLower = name.ToLower().Replace(" ", "");
+        string name =
+            t.name.ToLowerInvariant()
+                .Replace(" ", "");
 
-        // Strip common Blender prefixes (DEF-, MCH-, ORG-)
-        string stripped = nameLower;
-        if (stripped.StartsWith("def-") || stripped.StartsWith("mch-") || stripped.StartsWith("org-"))
-            stripped = stripped.Substring(4);
+        string stripped =
+            name;
 
-        // Determine side (left/right)
-        bool isLeft = false;
-        bool isRight = false;
-
-        // Check side indicators
-        if (stripped.EndsWith(".l") || stripped.EndsWith("_l") || stripped.Contains("left") ||
-            stripped.StartsWith("l.") || stripped.StartsWith("l_") || stripped.StartsWith("l "))
+        if (
+            stripped.StartsWith("def-") ||
+            stripped.StartsWith("mch-") ||
+            stripped.StartsWith("org-"))
         {
-            isLeft = true;
-        }
-        else if (stripped.EndsWith(".r") || stripped.EndsWith("_r") || stripped.Contains("right") ||
-                 stripped.StartsWith("r.") || stripped.StartsWith("r_") || stripped.StartsWith("r "))
-        {
-            isRight = true;
+            stripped =
+                stripped.Substring(4);
         }
 
-        if (!isLeft && !isRight) return;
+        bool isLeft =
+            stripped.EndsWith(".l") ||
+            stripped.EndsWith("_l") ||
+            stripped.Contains("left") ||
+            stripped.StartsWith("l.") ||
+            stripped.StartsWith("l_");
 
-        // Determine which toe index (0=big, 1=index, 2=middle, 3=ring, 4=little/pinky)
-        int toeIndex = GetToeIndex(stripped);
-        if (toeIndex < 0) return;
+        bool isRight =
+            stripped.EndsWith(".r") ||
+            stripped.EndsWith("_r") ||
+            stripped.Contains("right") ||
+            stripped.StartsWith("r.") ||
+            stripped.StartsWith("r_");
 
-        // Only match the first segment (01 or 1), not intermediate/tip segments
-        if (IsIntermediateSegment(stripped)) return;
-
-        Transform[] targetArray = isLeft ? leftFootBones : rightFootBones;
-
-        // Only assign if the slot is empty (don't overwrite user assignments)
-        if (targetArray[toeIndex] == null)
+        if (isLeft == isRight)
         {
-            targetArray[toeIndex] = t;
-            if (isLeft) leftFound++;
-            else rightFound++;
-            Debug.Log($"[ToeRig] Auto-mapped '{t.name}' -> {(isLeft ? "Left" : "Right")} toe index {toeIndex}");
+            return;
+        }
+
+        int toeIndex =
+            GetToeIndex(
+                stripped
+            );
+
+        if (
+            toeIndex < 0 ||
+            IsIntermediateSegment(
+                stripped))
+        {
+            return;
+        }
+
+        Transform[] target =
+            isLeft
+                ? leftFootBones
+                : rightFootBones;
+
+        if (target[toeIndex] != null)
+        {
+            return;
+        }
+
+        target[toeIndex] = t;
+
+        if (isLeft)
+        {
+            leftFound++;
+        }
+        else
+        {
+            rightFound++;
         }
     }
 
-    int GetToeIndex(string nameLower)
+    private int GetToeIndex(
+        string name)
     {
-        // Big toe / Hallux / Toe 1
-        if (nameLower.Contains("big") || nameLower.Contains("hallux") || nameLower.Contains("thumb"))
+        if (
+            name.Contains("big") ||
+            name.Contains("hallux") ||
+            name.Contains("thumb"))
+        {
             return 0;
+        }
 
-        // Index toe / Toe 2 / Long toe
-        if (nameLower.Contains("index") || nameLower.Contains("long"))
-            return 1;
-
-        // Middle toe / Toe 3
-        if (nameLower.Contains("middle") || nameLower.Contains("mid"))
-            return 2;
-
-        // Ring toe / Toe 4 / Fourth
-        if (nameLower.Contains("ring") || nameLower.Contains("fourth"))
-            return 3;
-
-        // Little toe / Pinky / Small / Toe 5
-        if (nameLower.Contains("little") || nameLower.Contains("pinky") ||
-            nameLower.Contains("small") || nameLower.Contains("baby"))
-            return 4;
-
-        // Try numbered patterns: "toe1", "toe_1", "toe.1", "toes1"
-        return GetToeIndexFromNumber(nameLower);
-    }
-
-    int GetToeIndexFromNumber(string nameLower)
-    {
-        // Look for patterns like "toe1", "toe_1", "toe.1", "toes1", "toe01"
-        // We need to find a digit that represents the toe number
-        for (int i = 0; i < nameLower.Length; i++)
+        if (
+            name.Contains("index") ||
+            name.Contains("long"))
         {
-            // Check for "toe" followed eventually by a digit
-            if (i + 3 < nameLower.Length && nameLower.Substring(i, 3) == "toe")
+            return 1;
+        }
+
+        if (
+            name.Contains("middle") ||
+            name.Contains("mid"))
+        {
+            return 2;
+        }
+
+        if (
+            name.Contains("ring") ||
+            name.Contains("fourth"))
+        {
+            return 3;
+        }
+
+        if (
+            name.Contains("little") ||
+            name.Contains("pinky") ||
+            name.Contains("small") ||
+            name.Contains("baby"))
+        {
+            return 4;
+        }
+
+        for (
+            int i = 0;
+            i < name.Length - 2;
+            i++)
+        {
+            if (
+                name.Substring(i, 3) !=
+                "toe")
             {
-                // Skip past "toe" or "toes"
-                int j = i + 3;
-                if (j < nameLower.Length && nameLower[j] == 's') j++;
+                continue;
+            }
 
-                // Skip separators and leading zeros
-                while (j < nameLower.Length && (nameLower[j] == '_' || nameLower[j] == '.' || nameLower[j] == '-' || nameLower[j] == '0'))
-                    j++;
+            int j = i + 3;
 
-                // Check for side indicators between "toe" and the number (e.g., "toeleft1")
-                string remaining = nameLower.Substring(j);
-                if (remaining.StartsWith("left") || remaining.StartsWith("right"))
+            if (
+                j < name.Length &&
+                name[j] == 's')
+            {
+                j++;
+            }
+
+            while (
+                j < name.Length &&
+                (
+                    name[j] == '_' ||
+                    name[j] == '.' ||
+                    name[j] == '-' ||
+                    name[j] == '0'))
+            {
+                j++;
+            }
+
+            string remaining =
+                name.Substring(j);
+
+            if (
+                remaining.StartsWith(
+                    "left"))
+            {
+                j += 4;
+            }
+            else if (
+                remaining.StartsWith(
+                    "right"))
+            {
+                j += 5;
+            }
+
+            while (
+                j < name.Length &&
+                (
+                    name[j] == '_' ||
+                    name[j] == '.' ||
+                    name[j] == '-' ||
+                    name[j] == '0'))
+            {
+                j++;
+            }
+
+            if (
+                j < name.Length &&
+                char.IsDigit(name[j]))
+            {
+                int digit =
+                    name[j] - '0';
+
+                if (
+                    digit >= 1 &&
+                    digit <= 5)
                 {
-                    j += remaining.StartsWith("left") ? 4 : 5;
-                    // Skip separators again
-                    while (j < nameLower.Length && (nameLower[j] == '_' || nameLower[j] == '.' || nameLower[j] == '-' || nameLower[j] == '0'))
-                        j++;
-                }
-
-                if (j < nameLower.Length && char.IsDigit(nameLower[j]))
-                {
-                    int digit = nameLower[j] - '0';
-                    if (digit >= 1 && digit <= 5)
-                        return digit - 1; // Convert 1-based to 0-based index
+                    return digit - 1;
                 }
             }
         }
@@ -402,566 +1767,1012 @@ public class ToeRigInjector : EditorWindow
         return -1;
     }
 
-    bool IsIntermediateSegment(string nameLower)
+    private bool IsIntermediateSegment(
+        string name)
     {
-        // Skip bones that are intermediate or tip segments
-        // Blender Rigify: ".02", ".03" etc.
-        // Other: "mid", "tip", "end", "distal", "intermediate" when used as segment names
-
-        // Check for Blender-style segment numbers (.02, .03, _02, _03)
-        for (int seg = 2; seg <= 5; seg++)
+        if (
+            name.Contains("distal") ||
+            name.Contains("intermediate") ||
+            name.Contains("proximal2") ||
+            name.Contains("phalanx2") ||
+            name.Contains("phalanx3") ||
+            name.EndsWith("_end") ||
+            name.EndsWith(".end"))
         {
-            string dotSeg = $".{seg:D2}";   // .02, .03
-            string underSeg = $"_{seg:D2}"; // _02, _03
-            string dotSeg1 = $".{seg}";     // .2, .3
-            string underSeg1 = $"_{seg}";   // _2, _3
-
-            // Only match at positions that indicate a segment number, not the toe number
-            // The segment number typically comes after the toe identifier
-            if (nameLower.Contains("toe") && !nameLower.Contains($"toe{dotSeg}") && !nameLower.Contains($"toe{underSeg}"))
-            {
-                if (nameLower.EndsWith(dotSeg) || nameLower.EndsWith(underSeg) ||
-                    EndsWithBeforeSide(nameLower, dotSeg) || EndsWithBeforeSide(nameLower, underSeg))
-                    return true;
-                if (nameLower.EndsWith(dotSeg1) || nameLower.EndsWith(underSeg1) ||
-                    EndsWithBeforeSide(nameLower, dotSeg1) || EndsWithBeforeSide(nameLower, underSeg1))
-                    return true;
-            }
+            return true;
         }
 
-        // Check for explicit segment names (but not "middle" which is a toe name)
-        if (nameLower.Contains("distal") || nameLower.Contains("intermediate") ||
-            nameLower.Contains("proximal2") || nameLower.Contains("phalanx2") ||
-            nameLower.Contains("phalanx3"))
-            return true;
+        string[] sidePatterns =
+        {
+            "",
+            ".l",
+            ".r",
+            "_l",
+            "_r"
+        };
 
-        // Check for "_end" suffix (Blender bone tips)
-        if (nameLower.EndsWith("_end") || nameLower.EndsWith(".end"))
-            return true;
+        for (
+            int segment = 2;
+            segment <= 5;
+            segment++)
+        {
+            foreach (
+                string side
+                in sidePatterns)
+            {
+                if (
+                    name.EndsWith(
+                        $".{segment:D2}{side}") ||
+                    name.EndsWith(
+                        $"_{segment:D2}{side}"))
+                {
+                    return true;
+                }
+            }
+        }
 
         return false;
-    }
-
-    bool EndsWithBeforeSide(string name, string suffix)
-    {
-        // Check if the name has the suffix just before a side indicator (.l, .r, _l, _r)
-        string[] sidePatterns = { ".l", ".r", "_l", "_r" };
-        foreach (var side in sidePatterns)
-        {
-            if (name.EndsWith(suffix + side))
-                return true;
-        }
-        return false;
-    }
-
-    void PreviewJson()
-    {
-        extracted = JsonUtility.FromJson<ToeExtractResult>(jsonFile.text);
-        string msg = $"Layers: {extracted.layers.Count}\nParameters: {extracted.parameters.Count}\n";
-        msg += "Layer names:\n";
-        foreach (var l in extracted.layers) msg += $" - {l.name}\n";
-        EditorUtility.DisplayDialog("JSON Preview", msg, "OK");
-    }
-
-    float GetToeSplay(bool isLeftFoot, int toeIndex)
-    {
-        if (isLeftFoot) return Mathf.Clamp(leftFootSplay[Mathf.Clamp(toeIndex, 0, 4)], -180f, 180f);
-        else return Mathf.Clamp(rightFootSplay[Mathf.Clamp(toeIndex, 0, 4)], -180f, 180f);
-    }
-    static void DestroyStateMachineRecursive(AnimatorStateMachine sm)
-    {
-        if (sm == null) return;
-
-        // Destroy all states and their motions (clips / blendtrees) ---
-        foreach (var child in sm.states)
-        {
-            AnimatorState state = child.state;
-
-            // Remove motion (AnimationClip or BlendTree)
-            if (state.motion is BlendTree bt)
-            {
-                AssetDatabase.RemoveObjectFromAsset(bt);
-                Object.DestroyImmediate(bt, true);
-            }
-            else if (state.motion is AnimationClip clip)
-            {
-                // Only remove if clip is embedded inside controller (sub-asset)
-                string assetPath = AssetDatabase.GetAssetPath(clip);
-                if (assetPath == AssetDatabase.GetAssetPath(sm))
-                {
-                    AssetDatabase.RemoveObjectFromAsset(clip);
-                    Object.DestroyImmediate(clip, true);
-                }
-            }
-
-            // Destroy transitions
-            foreach (var t in state.transitions)
-            {
-                AssetDatabase.RemoveObjectFromAsset(t);
-                Object.DestroyImmediate(t, true);
-            }
-
-            // Remove the state itself
-            AssetDatabase.RemoveObjectFromAsset(state);
-            Object.DestroyImmediate(state, true);
-        }
-
-        // Destroy any-state transitions
-        foreach (var t in sm.anyStateTransitions)
-        {
-            AssetDatabase.RemoveObjectFromAsset(t);
-            Object.DestroyImmediate(t, true);
-        }
-
-        // Destroy entry transitions
-        foreach (var t in sm.entryTransitions)
-        {
-            AssetDatabase.RemoveObjectFromAsset(t);
-            Object.DestroyImmediate(t, true);
-        }
-
-        // Recursively destroy sub-state machines
-        foreach (var sub in sm.stateMachines)
-        {
-            DestroyStateMachineRecursive(sub.stateMachine);
-        }
-
-        // Remove this state machine
-        AssetDatabase.RemoveObjectFromAsset(sm);
-        Object.DestroyImmediate(sm, true);
-    }
-    void CollectMotions(AnimatorStateMachine sm, HashSet<Motion> motions)
-    {
-        if (sm == null) return;
-
-        foreach (var state in sm.states)
-        {
-            if (state.state.motion != null)
-            {
-                motions.Add(state.state.motion);
-                if (state.state.motion is BlendTree bt)
-                {
-                    CollectBlendTreeMotions(bt, motions);
-                }
-            }
-        }
-
-        foreach (var sub in sm.stateMachines)
-        {
-            CollectMotions(sub.stateMachine, motions);
-        }
-    }
-
-    void CollectBlendTreeMotions(BlendTree bt, HashSet<Motion> motions)
-    {
-        motions.Add(bt);
-        foreach (var child in bt.children)
-        {
-            if (child.motion != null)
-            {
-                motions.Add(child.motion);
-                if (child.motion is BlendTree nested)
-                {
-                    CollectBlendTreeMotions(nested, motions);
-                }
-            }
-        }
-    }
-
-    void ApplyInjection()
-    {
-        extracted = JsonUtility.FromJson<ToeExtractResult>(jsonFile.text);
-        if (extracted == null || extracted.layers == null || extracted.layers.Count == 0)
-        {
-            EditorUtility.DisplayDialog("JSON invalid", "Could not parse layers from JSON.", "OK");
-            return;
-        }
-
-        var controller = targetController;
-
-        // Add parameters here
-        foreach (var p in extracted.parameters)
-        {
-            if (!controller.parameters.Any(cp => cp.name == p.name))
-            {
-                controller.AddParameter(p.name, p.type);
-            }
-            if (p.type == AnimatorControllerParameterType.Bool)
-            {
-                VRCExpressionUtility.AddMissingParameter(selectedExpParams, p.name, VRCExpressionParameters.ValueType.Bool, true, 0, true);
-            }
-        }
-
-
-        if (!AssetDatabase.IsValidFolder(clipOutputFolder))
-        {
-            string parent = Path.GetDirectoryName(clipOutputFolder.TrimEnd('/'));
-            string newFolder = Path.GetFileName(clipOutputFolder);
-            if (!AssetDatabase.IsValidFolder(parent)) parent = "Assets";
-            AssetDatabase.CreateFolder(parent, newFolder);
-        }
-
-        remappedClips.Clear();
-
-        var newLayersList = controller.layers.ToList();
-        string controllerPath = AssetDatabase.GetAssetPath(controller);
-        var allObjects = AssetDatabase.LoadAllAssetsAtPath(controllerPath);
-
-        foreach (var extractedLayer in extracted.layers)
-        {
-            // Check if the layer already exists and remove it if it does
-            var existingLayer = newLayersList.FirstOrDefault(l => l.name == extractedLayer.name);
-            if (existingLayer != null)
-            {
-                // Remove the existing layer
-                newLayersList.Remove(existingLayer);
-                // Destroy its state machine sub-asset
-                if (existingLayer.stateMachine != null)
-                {
-                    DestroyStateMachineRecursive(existingLayer.stateMachine);
-                }
-            }
-
-            bool isLeftFoot = extractedLayer.name.ToLower().Contains("left");
-            int toeIndex = int.Parse(new string(extractedLayer.name.Where(char.IsDigit).ToArray())) - 1;
-            Transform toeBone = isLeftFoot ? leftFootBones[toeIndex] : rightFootBones[toeIndex];
-
-            if (toeBone == null)
-            {
-                continue;
-            }
-
-            var injectedLayer = new AnimatorControllerLayer
-            {
-                name = extractedLayer.name,
-                defaultWeight = 1f,
-                stateMachine = new AnimatorStateMachine()
-            };
-            AssetDatabase.AddObjectToAsset(injectedLayer.stateMachine, controllerPath);
-
-            AnimatorState firstState = null;
-
-            foreach (var s in extractedLayer.states)
-            {
-                AnimatorState st = injectedLayer.stateMachine.AddState(s.name);
-                if (s.isBlendTree)
-                {
-                    bool isSplayed = s.name.ToLower().Contains("splayed");
-                    // Generate 3 clips per toe per state
-                    GenerateAutoAnim(extractedLayer.name, controller.name, isSplayed, toeBone, isLeftFoot, toeIndex);
-                    // Create blendtree
-                    var bt = new BlendTree { name = s.name, blendType = BlendTreeType.Simple1D, useAutomaticThresholds = false };
-
-                    if (!string.IsNullOrEmpty(s.blendParameter))
-                    {
-                        // Assign the blend parameter from JSON
-                        bt.blendParameter = (useOSCSmoothPath ? "OSCm/Proxy/" : "") + s.blendParameter;
-                        if (!controller.parameters.Any(p => p.name == s.blendParameter && p.type == AnimatorControllerParameterType.Float))
-                        {
-                            controller.AddParameter(s.blendParameter, AnimatorControllerParameterType.Float);
-                        }
-                        VRCExpressionUtility.AddMissingParameter(selectedExpParams, s.blendParameter, VRCExpressionParameters.ValueType.Float, true, 0, true);
-                    }
-
-                    string bentClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Bent" : $"{extractedLayer.name}Bent");
-                    string neutralClipName = controller.name + (isSplayed ? $"Splayed{extractedLayer.name}Neutral" : $"{extractedLayer.name}Neutral");
-                    string tipClipName = controller.name + (isSplayed ? $"SplayedTip{extractedLayer.name}" : $"TipToes{extractedLayer.name}");
-
-                    if (remappedClips.ContainsKey(bentClipName))
-                    {
-                        bt.AddChild(remappedClips[bentClipName], -1);
-                    }
-                    if (remappedClips.ContainsKey(neutralClipName))
-                    {
-                        bt.AddChild(remappedClips[neutralClipName], 0f);
-                    }
-                    if (remappedClips.ContainsKey(tipClipName))
-                    {
-                        bt.AddChild(remappedClips[tipClipName], 1);
-                    }
-
-                    st.motion = bt;
-
-                    AssetDatabase.AddObjectToAsset(bt, controllerPath);
-                    EditorUtility.SetDirty(bt);
-                }
-                else
-                {
-                    string neutralClipName = controller.name + $"{extractedLayer.name}Neutral";
-                    if (remappedClips.ContainsKey(neutralClipName))
-                    {
-                        st.motion = remappedClips[neutralClipName];
-                    }
-                }
-
-                if (firstState == null)
-                {
-                    firstState = st;
-                }
-            }
-
-            if (firstState != null)
-            {
-                injectedLayer.stateMachine.defaultState = firstState;
-            }
-
-            foreach (var t in extractedLayer.transitions)
-            {
-                AnimatorState fromState = injectedLayer.stateMachine.states
-                    .Select(x => x.state)
-                    .FirstOrDefault(st => st.name == t.from);
-                AnimatorState toState = injectedLayer.stateMachine.states
-                    .Select(x => x.state)
-                    .FirstOrDefault(st => st.name == t.to);
-
-                if (fromState != null && toState != null)
-                {
-                    var tr = fromState.AddTransition(toState);
-                    tr.hasExitTime = t.hasExitTime;
-                    tr.exitTime = t.exitTime;
-                    tr.duration = t.duration;
-                    tr.hasFixedDuration = t.fixedDuration;
-                    tr.interruptionSource = t.interruptionSource;
-
-                    foreach (var c in t.conditions)
-                        tr.AddCondition(c.mode, c.threshold, c.parameter);
-                }
-                else if (toState != null)
-                {
-                    var tr = injectedLayer.stateMachine.AddAnyStateTransition(toState);
-                    tr.hasExitTime = false;
-                    tr.duration = t.duration;
-                    foreach (var c in t.conditions)
-                        tr.AddCondition(c.mode, c.threshold, c.parameter);
-                }
-            }
-
-            newLayersList.Add(injectedLayer);
-        }
-
-        controller.layers = newLayersList.ToArray();
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-
-        EditorUtility.DisplayDialog("Toe configuration completed!", "Toe support has been added.", "OK");
-    }
-
-    Transform GetAvatarRoot(Transform t)
-    {
-        if (t == null) return null;
-        Transform parent = t.parent;
-        Transform lastParent = t;
-        while (parent != null)
-        {
-            if (parent.GetComponent<Animator>() != null)
-            {
-                return parent;
-            }
-            lastParent = parent;
-            parent = parent.parent;
-        }
-        return lastParent;
-    }
-
-    Vector3 GetContinuousEuler(Vector3 reference, Vector3 newEuler)
-    {
-        float x = Mathf.DeltaAngle(reference.x, newEuler.x) + reference.x;
-        float y = Mathf.DeltaAngle(reference.y, newEuler.y) + reference.y;
-        float z = Mathf.DeltaAngle(reference.z, newEuler.z) + reference.z;
-        return new Vector3(x, y, z);
-    }
-
-    void GenerateAutoAnim(string toeName, string controllerName, bool isSplayed, Transform toeBone, bool isLeftFoot, int toeIndex)
-    {
-        if (toeBone == null) return;
-
-        // Clip names
-        string bentClipName = controllerName + (isSplayed ? $"Splayed{toeName}Bent" : $"{toeName}Bent");
-        string neutralClipName = controllerName + (isSplayed ? $"Splayed{toeName}Neutral" : $"{toeName}Neutral");
-        string tipClipName = controllerName + (isSplayed ? $"SplayedTip{toeName}" : $"TipToes{toeName}");
-
-        // Skip if already generated
-        if (remappedClips.ContainsKey(bentClipName)) return;
-
-        float splay = isSplayed ? (isLeftFoot ? GetToeSplay(isLeftFoot, toeIndex) : GetToeSplay(isLeftFoot, toeIndex)) : 0f;
-
-        List<Transform> toeTransforms = new List<Transform>();
-
-        toeTransforms.Add(toeBone);
-        if (toeBone.childCount > 0)
-        {
-            var childBone = toeBone.GetChild(0);
-            if (!childBone.name.EndsWith("_end"))
-            {
-                toeTransforms.Add(childBone);
-            }
-        }
-
-        AnimationClip bentClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
-        AnimationClip neutralClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
-        AnimationClip tipClip = new AnimationClip { frameRate = 60, wrapMode = WrapMode.Loop };
-
-        Transform avatarRoot = GetAvatarRoot(toeBone);
-        Vector3 curlAxis = avatarRoot != null ? avatarRoot.right : Vector3.right;
-        Vector3 splayAxis = avatarRoot != null ? avatarRoot.up : Vector3.up;
-
-        for (int i = 0; i < toeTransforms.Count; i++)
-        {
-            Transform toeSegment = toeTransforms[i];
-            Vector3 originalEuler = toeSegment.localEulerAngles;
-            Quaternion originalRot = toeSegment.rotation;
-
-            float curlMinAngle = (invertValues ? -curlMinX : curlMinX) / toeTransforms.Count;
-            float curlMaxAngle = i == 0 ? (invertValues ? -curlMaxX : curlMaxX) : 0;
-            float splayAngle = i == 0 ? (invertValues ? -splay : splay) : 0;
-
-            // Bent (Curl down)
-            toeSegment.Rotate(curlAxis, curlMinAngle, Space.World);
-            toeSegment.Rotate(splayAxis, splayAngle, Space.World);
-            Vector3 bentEuler = GetContinuousEuler(originalEuler, toeSegment.localEulerAngles);
-            toeSegment.rotation = originalRot;
-
-            // Tip (Curl up)
-            toeSegment.Rotate(curlAxis, curlMaxAngle, Space.World);
-            toeSegment.Rotate(splayAxis, splayAngle, Space.World);
-            Vector3 tipEuler = GetContinuousEuler(originalEuler, toeSegment.localEulerAngles);
-            toeSegment.rotation = originalRot;
-
-            // Neutral
-            toeSegment.Rotate(splayAxis, splayAngle, Space.World);
-            Vector3 neutralEuler = GetContinuousEuler(originalEuler, toeSegment.localEulerAngles);
-            toeSegment.rotation = originalRot;
-
-            // Apply to curves
-            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", new AnimationCurve(new Keyframe(0, bentEuler.x), new Keyframe(1, bentEuler.x)));
-            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", new AnimationCurve(new Keyframe(0, bentEuler.y), new Keyframe(1, bentEuler.y)));
-            bentClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", new AnimationCurve(new Keyframe(0, bentEuler.z), new Keyframe(1, bentEuler.z)));
-
-            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", new AnimationCurve(new Keyframe(0, neutralEuler.x), new Keyframe(1, neutralEuler.x)));
-            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", new AnimationCurve(new Keyframe(0, neutralEuler.y), new Keyframe(1, neutralEuler.y)));
-            neutralClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", new AnimationCurve(new Keyframe(0, neutralEuler.z), new Keyframe(1, neutralEuler.z)));
-
-            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.x", new AnimationCurve(new Keyframe(0, tipEuler.x), new Keyframe(1, tipEuler.x)));
-            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.y", new AnimationCurve(new Keyframe(0, tipEuler.y), new Keyframe(1, tipEuler.y)));
-            tipClip.SetCurve(GetBonePath(toeSegment), typeof(Transform), "localEulerAnglesRaw.z", new AnimationCurve(new Keyframe(0, tipEuler.z), new Keyframe(1, tipEuler.z)));
-        }
-
-        string bentPath = $"{clipOutputFolder}/{bentClipName}.anim";
-        string neutralPath = $"{clipOutputFolder}/{neutralClipName}.anim";
-        string tipPath = $"{clipOutputFolder}/{tipClipName}.anim";
-        SaveOrOverwriteClip(bentClip, bentPath);
-        SaveOrOverwriteClip(neutralClip, neutralPath);
-        SaveOrOverwriteClip(tipClip, tipPath);
-
-        remappedClips[bentClipName] = AssetDatabase.LoadAssetAtPath<AnimationClip>(bentPath);
-        remappedClips[neutralClipName] = AssetDatabase.LoadAssetAtPath<AnimationClip>(neutralPath);
-        remappedClips[tipClipName] = AssetDatabase.LoadAssetAtPath<AnimationClip>(tipPath);
-    }
-    void SaveOrOverwriteClip(AnimationClip clip, string fullPath)
-    {
-        string directory = Path.GetDirectoryName(fullPath);
-        if (!Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-            AssetDatabase.Refresh();
-        }
-
-        var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(fullPath);
-        if (existing != null)
-        {
-            AssetDatabase.DeleteAsset(fullPath);
-        }
-
-        AssetDatabase.CreateAsset(clip, fullPath);
-        AssetDatabase.ImportAsset(fullPath, ImportAssetOptions.ForceUpdate);
-    }
-    string GetBonePath(Transform t)
-    {
-        if (t == null) return "";
-        string path = t.name;
-        Transform parent = t.parent;
-        while (parent != null)
-        {
-            path = parent.name + "/" + path;
-            if (parent.name.StartsWith("Armature"))
-            {
-                break;
-            }
-            parent = parent.parent;
-        }
-        return path;
     }
 }
+
 static class Prefs
 {
-    public static void SetObject(string key, UnityEngine.Object obj)
+    public static void SetObject(
+        string key,
+        UnityEngine.Object obj)
     {
         if (obj == null)
         {
-            EditorPrefs.DeleteKey(key);
+            EditorPrefs.DeleteKey(
+                key
+            );
+
             return;
         }
-        string path = AssetDatabase.GetAssetPath(obj);
-        string guid = AssetDatabase.AssetPathToGUID(path);
-        EditorPrefs.SetString(key, guid);
+
+        string path =
+            AssetDatabase.GetAssetPath(
+                obj
+            );
+
+        string guid =
+            AssetDatabase.AssetPathToGUID(
+                path
+            );
+
+        EditorPrefs.SetString(
+            key,
+            guid
+        );
     }
 
-    public static T GetObject<T>(string key) where T : UnityEngine.Object
+    public static T GetObject<T>(
+        string key)
+        where T : UnityEngine.Object
     {
-        if (!EditorPrefs.HasKey(key)) return null;
-        string guid = EditorPrefs.GetString(key);
-        string path = AssetDatabase.GUIDToAssetPath(guid);
-        return AssetDatabase.LoadAssetAtPath<T>(path);
+        if (
+            !EditorPrefs.HasKey(
+                key))
+        {
+            return null;
+        }
+
+        string guid =
+            EditorPrefs.GetString(
+                key
+            );
+
+        string path =
+            AssetDatabase.GUIDToAssetPath(
+                guid
+            );
+
+        return AssetDatabase.LoadAssetAtPath<T>(
+            path
+        );
     }
 }
+
 static class BonePrefs
 {
-    private static Transform GetRoot(Transform t)
-    {
-        if (t == null) return null;
-        Transform root = t;
-        while (root.parent != null) root = root.parent;
-        return root;
-    }
-
-    public static void SaveBone(string key, Transform t)
+    private static Transform GetRoot(
+        Transform t)
     {
         if (t == null)
         {
-            EditorPrefs.DeleteKey(key);
+            return null;
+        }
+
+        Transform root = t;
+
+        while (root.parent != null)
+        {
+            root =
+                root.parent;
+        }
+
+        return root;
+    }
+
+    public static void SaveBone(
+        string key,
+        Transform t)
+    {
+        if (t == null)
+        {
+            EditorPrefs.DeleteKey(
+                key
+            );
+
             return;
         }
 
-        Transform root = GetRoot(t);
-        string path = GetPathRelativeToRoot(t, root);
-        EditorPrefs.SetString(key, path);
+        Transform root =
+            GetRoot(t);
+
+        EditorPrefs.SetString(
+            key,
+            GetPathRelativeToRoot(
+                t,
+                root
+            )
+        );
     }
 
-    public static Transform LoadBone(string key)
+    public static Transform LoadBone(
+        string key)
     {
-        if (!EditorPrefs.HasKey(key)) return null;
-        string path = EditorPrefs.GetString(key);
-
-        // Try to find the bone by searching all transforms in the scene
-        foreach (var t in GameObject.FindObjectsOfType<Transform>())
+        if (
+            !EditorPrefs.HasKey(
+                key))
         {
-            if (t.name == path.Split('/')[^1] && GetPathRelativeToRoot(t, GetRoot(t)) == path)
+            return null;
+        }
+
+        string path =
+            EditorPrefs.GetString(
+                key
+            );
+
+        string leafName =
+            path.Split('/')[^1];
+
+        foreach (
+            Transform t
+            in GameObject.FindObjectsOfType
+                <Transform>())
+        {
+            if (
+                t.name == leafName &&
+                GetPathRelativeToRoot(
+                    t,
+                    GetRoot(t)
+                ) ==
+                path)
+            {
                 return t;
+            }
         }
 
         return null;
     }
 
-    private static string GetPathRelativeToRoot(Transform t, Transform root)
+    private static string GetPathRelativeToRoot(
+        Transform t,
+        Transform root)
     {
-        if (t == root) return "";
-        string path = t.name;
-        Transform parent = t.parent;
-        while (parent != null && parent != root)
+        if (t == root)
         {
-            path = parent.name + "/" + path;
-            parent = parent.parent;
+            return "";
         }
+
+        string path =
+            t.name;
+
+        Transform parent =
+            t.parent;
+
+        while (
+            parent != null &&
+            parent != root)
+        {
+            path =
+                parent.name +
+                "/" +
+                path;
+
+            parent =
+                parent.parent;
+        }
+
         return path;
     }
+    public static void Install(
+        AnimatorController controller,
+        VRCExpressionParameters expressionParameters)
+    {
+        if (controller == null)
+        {
+            Debug.LogError("[ToeRig] Cannot install 4-bit codec: AnimatorController is null.");
+            return;
+        }
+
+        if (expressionParameters == null)
+        {
+            Debug.LogError("[ToeRig] Cannot install 4-bit codec: VRCExpressionParameters is null.");
+            return;
+        }
+
+        string controllerPath = AssetDatabase.GetAssetPath(controller);
+
+        if (string.IsNullOrEmpty(controllerPath))
+        {
+            Debug.LogError("[ToeRig] Cannot install 4-bit codec: controller has no asset path.");
+            return;
+        }
+
+        EnsureAnimatorBoolParameter(controller, "IsLocal");
+
+        foreach (string logicalParameter in LogicalParameters)
+        {
+            AddUnsyncedFloatParameter(
+                controller,
+                expressionParameters,
+                logicalParameter
+            );
+
+            AddEncodedBoolParameters(
+                controller,
+                expressionParameters,
+                logicalParameter
+            );
+
+            string encoderLayer =
+                GetEncoderLayerName(logicalParameter);
+
+            string decoderLayer =
+                GetDecoderLayerName(logicalParameter);
+
+            RemoveExistingLayer(
+                controller,
+                encoderLayer
+            );
+
+            RemoveExistingLayer(
+                controller,
+                decoderLayer
+            );
+
+            GenerateFourBitEncoderLayer(
+                controller,
+                logicalParameter,
+                encoderLayer,
+                controllerPath
+            );
+
+            GenerateFourBitDecoderLayer(
+                controller,
+                logicalParameter,
+                decoderLayer,
+                controllerPath
+            );
+        }
+
+        EditorUtility.SetDirty(controller);
+        EditorUtility.SetDirty(expressionParameters);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.ImportAsset(
+            controllerPath,
+            ImportAssetOptions.ForceUpdate
+        );
+        AssetDatabase.Refresh();
+
+        Debug.Log(
+            "[ToeRig] Installed 4-bit network codec for 10 toe analog channels: " +
+            "6 curl Floats + 4 splay Floats = 40 synced Bool bits."
+        );
+    }
+
+    public static string GetMotionParameter(
+        string logicalParameter,
+        bool useOSCSmoothPath)
+    {
+        return useOSCSmoothPath
+            ? "OSCm/Proxy/" + logicalParameter
+            : logicalParameter;
+    }
+
+    private static string GetEncoderLayerName(
+        string logicalParameter)
+    {
+        return "ToeCodec_" +
+            logicalParameter +
+            "_4BitEncode";
+    }
+
+    private static string GetDecoderLayerName(
+        string logicalParameter)
+    {
+        return "ToeCodec_" +
+            logicalParameter +
+            "_4BitDecode";
+    }
+
+    private static string GetBitParameterName(
+        string logicalParameter,
+        int bit)
+    {
+        return logicalParameter +
+            "_B" +
+            bit;
+    }
+
+    private static void AddUnsyncedFloatParameter(
+        AnimatorController controller,
+        VRCExpressionParameters expressionParameters,
+        string parameter)
+    {
+        AnimatorControllerParameter[] animatorMatches =
+            controller.parameters
+                .Where(p => p.name == parameter)
+                .ToArray();
+
+        if (animatorMatches.Length == 0)
+        {
+            controller.AddParameter(
+                parameter,
+                AnimatorControllerParameterType.Float
+            );
+        }
+        else if (
+            animatorMatches.Length != 1 ||
+            animatorMatches[0].type !=
+                AnimatorControllerParameterType.Float)
+        {
+            Debug.LogError(
+                $"[ToeRig] Animator parameter '{parameter}' must be a single Float parameter."
+            );
+            return;
+        }
+
+        var parameters =
+            expressionParameters.parameters?.ToList() ??
+            new List<VRCExpressionParameters.Parameter>();
+
+        int index =
+            parameters.FindIndex(
+                p => p.name == parameter
+            );
+
+        VRCExpressionParameters.Parameter expressionParameter;
+
+        if (index >= 0)
+        {
+            expressionParameter =
+                parameters[index];
+        }
+        else
+        {
+            expressionParameter =
+                new VRCExpressionParameters.Parameter
+                {
+                    name = parameter
+                };
+
+            parameters.Add(expressionParameter);
+            index = parameters.Count - 1;
+        }
+
+        expressionParameter.valueType =
+            VRCExpressionParameters.ValueType.Float;
+
+        expressionParameter.networkSynced = false;
+        expressionParameter.saved = false;
+        expressionParameter.defaultValue = 0f;
+
+        parameters[index] =
+            expressionParameter;
+
+        expressionParameters.parameters =
+            parameters.ToArray();
+
+        EditorUtility.SetDirty(controller);
+        EditorUtility.SetDirty(expressionParameters);
+    }
+
+    private static void AddEncodedBoolParameters(
+        AnimatorController controller,
+        VRCExpressionParameters expressionParameters,
+        string logicalParameter)
+    {
+        for (int bit = 0; bit < 4; bit++)
+        {
+            string bitParameter =
+                GetBitParameterName(
+                    logicalParameter,
+                    bit
+                );
+
+            EnsureAnimatorBoolParameter(
+                controller,
+                bitParameter
+            );
+
+            var parameters =
+                expressionParameters.parameters?.ToList() ??
+                new List<VRCExpressionParameters.Parameter>();
+
+            int index =
+                parameters.FindIndex(
+                    p => p.name == bitParameter
+                );
+
+            VRCExpressionParameters.Parameter parameter;
+
+            if (index >= 0)
+            {
+                parameter =
+                    parameters[index];
+            }
+            else
+            {
+                parameter =
+                    new VRCExpressionParameters.Parameter
+                    {
+                        name = bitParameter
+                    };
+
+                parameters.Add(parameter);
+                index = parameters.Count - 1;
+            }
+
+            parameter.valueType =
+                VRCExpressionParameters.ValueType.Bool;
+
+            parameter.networkSynced = true;
+            parameter.saved = false;
+            parameter.defaultValue = 0f;
+
+            parameters[index] =
+                parameter;
+
+            expressionParameters.parameters =
+                parameters.ToArray();
+        }
+
+        EditorUtility.SetDirty(controller);
+        EditorUtility.SetDirty(expressionParameters);
+    }
+
+    private static void EnsureAnimatorBoolParameter(
+        AnimatorController controller,
+        string parameter)
+    {
+        AnimatorControllerParameter[] matches =
+            controller.parameters
+                .Where(p => p.name == parameter)
+                .ToArray();
+
+        if (
+            matches.Length == 1 &&
+            matches[0].type ==
+                AnimatorControllerParameterType.Bool)
+        {
+            return;
+        }
+
+        while (
+            controller.parameters.Any(
+                p => p.name == parameter
+            ))
+        {
+            AnimatorControllerParameter existing =
+                controller.parameters.First(
+                    p => p.name == parameter
+                );
+
+            controller.RemoveParameter(existing);
+        }
+
+        controller.AddParameter(
+            parameter,
+            AnimatorControllerParameterType.Bool
+        );
+
+        EditorUtility.SetDirty(controller);
+    }
+
+    private static void GenerateFourBitEncoderLayer(
+        AnimatorController controller,
+        string rawSourceFloatParameter,
+        string layerName,
+        string controllerPath)
+    {
+        if (
+            rawSourceFloatParameter.StartsWith(
+                "OSCm/Proxy/",
+                StringComparison.Ordinal))
+        {
+            Debug.LogError(
+                $"[ToeRig] Refusing to encode OSCmooth proxy '{rawSourceFloatParameter}'. " +
+                "The encoder must read the raw logical OSC Float."
+            );
+            return;
+        }
+
+        var stateMachine =
+            new AnimatorStateMachine
+            {
+                name = layerName
+            };
+
+        AssetDatabase.AddObjectToAsset(
+            stateMachine,
+            controllerPath
+        );
+
+        AnimatorState idleState =
+            stateMachine.AddState(
+                "Remote_Idle",
+                new Vector3(0f, 0f, 0f)
+            );
+
+        idleState.writeDefaultValues = true;
+        stateMachine.defaultState = idleState;
+
+        for (
+            int quantizedIndex = 0;
+            quantizedIndex < EncodedLevels;
+            quantizedIndex++)
+        {
+            int wireCode =
+                QuantizedIndexToWireCode(
+                    quantizedIndex
+                );
+
+            AnimatorState state =
+                stateMachine.AddState(
+                    $"Q{quantizedIndex:00}_Code{wireCode:X1}",
+                    new Vector3(
+                        280f * (quantizedIndex % 4),
+                        100f +
+                            90f *
+                            (quantizedIndex / 4),
+                        0f
+                    )
+                );
+
+            state.writeDefaultValues = true;
+
+            var driver =
+                state.AddStateMachineBehaviour
+                    <VRCAvatarParameterDriver>();
+
+            driver.localOnly = false;
+
+            driver.parameters =
+                new List<
+                    VRC_AvatarParameterDriver.Parameter>();
+
+            for (int bit = 0; bit < 4; bit++)
+            {
+                bool bitSet =
+                    (wireCode &
+                        (1 << bit)) != 0;
+
+                driver.parameters.Add(
+                    new VRC_AvatarParameterDriver.Parameter
+                    {
+                        name =
+                            GetBitParameterName(
+                                rawSourceFloatParameter,
+                                bit
+                            ),
+
+                        type =
+                            VRC_AvatarParameterDriver
+                                .ChangeType
+                                .Set,
+
+                        value =
+                            bitSet
+                                ? 1f
+                                : 0f
+                    }
+                );
+            }
+
+            EditorUtility.SetDirty(driver);
+            EditorUtility.SetDirty(state);
+
+            AnimatorStateTransition transition =
+                stateMachine.AddAnyStateTransition(
+                    state
+                );
+
+            transition.hasExitTime = false;
+            transition.duration = 0f;
+            transition.canTransitionToSelf = false;
+
+            AddForcedBoolCondition(
+                transition,
+                "IsLocal",
+                true
+            );
+
+            if (quantizedIndex > 0)
+            {
+                float lowerBoundary =
+                    -1f +
+                    (quantizedIndex - 0.5f) /
+                    EncodedMiddle;
+
+                transition.AddCondition(
+                    AnimatorConditionMode.Greater,
+                    lowerBoundary,
+                    rawSourceFloatParameter
+                );
+            }
+
+            if (
+                quantizedIndex <
+                EncodedLevels - 1)
+            {
+                float upperBoundary =
+                    -1f +
+                    (quantizedIndex + 0.5f) /
+                    EncodedMiddle;
+
+                transition.AddCondition(
+                    AnimatorConditionMode.Less,
+                    upperBoundary,
+                    rawSourceFloatParameter
+                );
+            }
+
+            EditorUtility.SetDirty(transition);
+        }
+
+        var layer =
+            new AnimatorControllerLayer
+            {
+                name = layerName,
+                defaultWeight = 1f,
+                stateMachine = stateMachine
+            };
+
+        var layers =
+            controller.layers.ToList();
+
+        layers.Add(layer);
+
+        controller.layers =
+            layers.ToArray();
+
+        EditorUtility.SetDirty(idleState);
+        EditorUtility.SetDirty(stateMachine);
+        EditorUtility.SetDirty(controller);
+    }
+
+    private static void GenerateFourBitDecoderLayer(
+        AnimatorController controller,
+        string decodedFloatParameter,
+        string layerName,
+        string controllerPath)
+    {
+        var stateMachine =
+            new AnimatorStateMachine
+            {
+                name = layerName
+            };
+
+        AssetDatabase.AddObjectToAsset(
+            stateMachine,
+            controllerPath
+        );
+
+        AnimatorState idleState =
+            stateMachine.AddState(
+                "Local_Idle",
+                new Vector3(0f, 0f, 0f)
+            );
+
+        idleState.writeDefaultValues = true;
+        stateMachine.defaultState = idleState;
+
+        for (
+            int wireCode = 0;
+            wireCode < 16;
+            wireCode++)
+        {
+            int quantizedIndex =
+                WireCodeToQuantizedIndex(
+                    wireCode
+                );
+
+            bool valid =
+                quantizedIndex >= 0 &&
+                quantizedIndex <
+                    EncodedLevels;
+
+            float decodedValue =
+                valid
+                    ? (
+                        quantizedIndex -
+                        EncodedMiddle
+                    ) /
+                    (float)EncodedMiddle
+                    : 0f;
+
+            string stateName =
+                valid
+                    ? $"Code_{wireCode:X1}_Step_{quantizedIndex:00}"
+                    : $"Code_{wireCode:X1}_FallbackNeutral";
+
+            AnimatorState state =
+                stateMachine.AddState(
+                    stateName,
+                    new Vector3(
+                        260f *
+                            (wireCode % 4),
+                        100f +
+                            90f *
+                            (wireCode / 4),
+                        0f
+                    )
+                );
+
+            state.writeDefaultValues = true;
+
+            var driver =
+                state.AddStateMachineBehaviour
+                    <VRCAvatarParameterDriver>();
+
+            driver.localOnly = false;
+
+            driver.parameters =
+                new List<
+                    VRC_AvatarParameterDriver.Parameter>
+                {
+                    new VRC_AvatarParameterDriver.Parameter
+                    {
+                        name =
+                            decodedFloatParameter,
+
+                        type =
+                            VRC_AvatarParameterDriver
+                                .ChangeType
+                                .Set,
+
+                        value =
+                            decodedValue
+                    }
+                };
+
+            EditorUtility.SetDirty(driver);
+            EditorUtility.SetDirty(state);
+
+            AnimatorStateTransition transition =
+                stateMachine.AddAnyStateTransition(
+                    state
+                );
+
+            transition.hasExitTime = false;
+            transition.duration = 0f;
+            transition.canTransitionToSelf = false;
+
+            AddForcedBoolCondition(
+                transition,
+                "IsLocal",
+                false
+            );
+
+            for (int bit = 0; bit < 4; bit++)
+            {
+                bool bitSet =
+                    (wireCode &
+                        (1 << bit)) != 0;
+
+                transition.AddCondition(
+                    bitSet
+                        ? AnimatorConditionMode.If
+                        : AnimatorConditionMode.IfNot,
+                    0f,
+                    GetBitParameterName(
+                        decodedFloatParameter,
+                        bit
+                    )
+                );
+            }
+
+            EditorUtility.SetDirty(transition);
+        }
+
+        var layer =
+            new AnimatorControllerLayer
+            {
+                name = layerName,
+                defaultWeight = 1f,
+                stateMachine = stateMachine
+            };
+
+        var layers =
+            controller.layers.ToList();
+
+        layers.Add(layer);
+
+        controller.layers =
+            layers.ToArray();
+
+        EditorUtility.SetDirty(idleState);
+        EditorUtility.SetDirty(stateMachine);
+        EditorUtility.SetDirty(controller);
+    }
+
+    private static void AddForcedBoolCondition(
+        AnimatorStateTransition transition,
+        string parameterName,
+        bool expectedValue)
+    {
+        AnimatorCondition[] retainedConditions =
+            transition.conditions
+                .Where(
+                    c =>
+                        c.parameter !=
+                        parameterName
+                )
+                .ToArray();
+
+        transition.conditions =
+            retainedConditions;
+
+        transition.AddCondition(
+            expectedValue
+                ? AnimatorConditionMode.If
+                : AnimatorConditionMode.IfNot,
+            0f,
+            parameterName
+        );
+
+        EditorUtility.SetDirty(transition);
+    }
+
+    private static int QuantizedIndexToWireCode(
+        int quantizedIndex)
+    {
+        quantizedIndex =
+            Mathf.Clamp(
+                quantizedIndex,
+                0,
+                EncodedLevels - 1
+            );
+
+        int gray =
+            quantizedIndex ^
+            (quantizedIndex >> 1);
+
+        return gray ^
+            NeutralGrayCode;
+    }
+
+    private static int WireCodeToQuantizedIndex(
+        int wireCode)
+    {
+        int gray =
+            wireCode ^
+            NeutralGrayCode;
+
+        int binary = 0;
+
+        for (
+            int value = gray;
+            value != 0;
+            value >>= 1)
+        {
+            binary ^= value;
+        }
+
+        return binary;
+    }
+
+    private static void RemoveExistingLayer(
+        AnimatorController controller,
+        string layerName)
+    {
+        var layers =
+            controller.layers.ToList();
+
+        AnimatorControllerLayer existing =
+            layers.FirstOrDefault(
+                l =>
+                    l.name ==
+                    layerName
+            );
+
+        if (existing == null)
+        {
+            return;
+        }
+
+        layers.Remove(existing);
+        controller.layers =
+            layers.ToArray();
+
+        if (existing.stateMachine != null)
+        {
+            DestroyStateMachineRecursive(
+                existing.stateMachine
+            );
+        }
+
+        EditorUtility.SetDirty(controller);
+    }
+
+    private static void DestroyStateMachineRecursive(
+        AnimatorStateMachine stateMachine)
+    {
+        if (stateMachine == null)
+        {
+            return;
+        }
+
+        foreach (
+            ChildAnimatorState child
+            in stateMachine.states)
+        {
+            AnimatorState state =
+                child.state;
+
+            foreach (
+                AnimatorStateTransition transition
+                in state.transitions)
+            {
+                UnityEngine.Object.DestroyImmediate(
+                    transition,
+                    true
+                );
+            }
+
+            UnityEngine.Object.DestroyImmediate(
+                state,
+                true
+            );
+        }
+
+        foreach (
+            AnimatorStateTransition transition
+            in stateMachine.anyStateTransitions)
+        {
+            UnityEngine.Object.DestroyImmediate(
+                transition,
+                true
+            );
+        }
+
+        foreach (
+            AnimatorTransition transition
+            in stateMachine.entryTransitions)
+        {
+            UnityEngine.Object.DestroyImmediate(
+                transition,
+                true
+            );
+        }
+
+        foreach (
+            ChildAnimatorStateMachine child
+            in stateMachine.stateMachines)
+        {
+            DestroyStateMachineRecursive(
+                child.stateMachine
+            );
+        }
+
+        UnityEngine.Object.DestroyImmediate(
+            stateMachine,
+            true
+        );
+    }
 }
+
