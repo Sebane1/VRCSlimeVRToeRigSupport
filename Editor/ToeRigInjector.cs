@@ -7,6 +7,8 @@ using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using VRC.SDK3.Avatars.Components;
+using VRC.SDKBase;
 using Object = UnityEngine.Object;
 
 public class ToeRigInjector : EditorWindow
@@ -71,24 +73,6 @@ public class ToeRigInjector : EditorWindow
         "ToeSplayRight5Float",
         "ToeSplayRight5Float",
         "ToeSplayRight5Float"
-    };
-    private const int EncodedLevels = 15;
-    private const int EncodedMiddle = 7;
-    private const int NeutralGrayCode = 4; // Gray(7) = 0100
-
-    public static readonly string[] LogicalParameters =
-    {
-        "ToeLeft1Float",
-        "ToeLeft2Float",
-        "ToeLeft5Float",
-        "ToeRight1Float",
-        "ToeRight2Float",
-        "ToeRight5Float",
-
-        "ToeSplayLeft1Float",
-        "ToeSplayLeft5Float",
-        "ToeSplayRight1Float",
-        "ToeSplayRight5Float",
     };
 
     [MenuItem("Tools/Toe Rig/Add Toe Tracking Compatibility")]
@@ -313,14 +297,6 @@ public class ToeRigInjector : EditorWindow
         }
 
         EditorGUILayout.Space();
-
-        EditorGUILayout.HelpBox(
-            "Continuous splay uses ToeSplay*1Float for the big toe and " +
-            "ToeSplay*5Float for toes 2-5. The legacy ToeSplay Bool " +
-            "parameters are no longer used for motion.",
-            MessageType.Info
-        );
-
         EditorGUILayout.Space();
 
         EditorGUILayout.LabelField(
@@ -385,8 +361,7 @@ public class ToeRigInjector : EditorWindow
                     "Please assign both the AnimatorController and VRC Expression Parameters.",
                     "OK"
                 );
-            }
-            else
+            } else
             {
                 ApplyInjection();
             }
@@ -476,7 +451,7 @@ public class ToeRigInjector : EditorWindow
 
         EditorUtility.DisplayDialog(
             "Toe configuration completed!",
-            "Toe support generated without ToeConfiguration.json.",
+            "Toe support has been fully integrated!",
             "OK"
         );
     }
@@ -533,13 +508,13 @@ public class ToeRigInjector : EditorWindow
         );
 
         string resolvedCurlParameter =
-          GetMotionParameter(
+            GetMotionParameter(
                 curlParameter,
                 useOSCSmoothPath
             );
 
         string resolvedSplayParameter =
-          GetMotionParameter(
+            GetMotionParameter(
                 splayParameter,
                 useOSCSmoothPath
             );
@@ -952,8 +927,7 @@ public class ToeRigInjector : EditorWindow
                         ? -curlMinX
                         : curlMinX) /
                     toeTransforms.Count;
-            }
-            else
+            } else
             {
                 curlAngle =
                     i == 0
@@ -1063,8 +1037,7 @@ public class ToeRigInjector : EditorWindow
         {
             exp =
                 parameters[index];
-        }
-        else
+        } else
         {
             exp =
                 new VRCExpressionParameters.Parameter
@@ -1114,8 +1087,7 @@ public class ToeRigInjector : EditorWindow
         {
             expressionParameter =
                 parameters[index];
-        }
-        else
+        } else
         {
             expressionParameter =
                 new VRCExpressionParameters.Parameter
@@ -1641,8 +1613,7 @@ public class ToeRigInjector : EditorWindow
         if (isLeft)
         {
             leftFound++;
-        }
-        else
+        } else
         {
             rightFound++;
         }
@@ -1729,10 +1700,9 @@ public class ToeRigInjector : EditorWindow
                     "left"))
             {
                 j += 4;
-            }
-            else if (
-                remaining.StartsWith(
-                    "right"))
+            } else if (
+                  remaining.StartsWith(
+                      "right"))
             {
                 j += 5;
             }
@@ -1813,180 +1783,31 @@ public class ToeRigInjector : EditorWindow
 
         return false;
     }
-}
 
-static class Prefs
-{
-    public static void SetObject(
-        string key,
-        UnityEngine.Object obj)
+
+    // ---------------------------------------------------------------------
+    // Integrated 4-bit toe network codec
+    // ---------------------------------------------------------------------
+
+    private const int EncodedLevels = 15;
+    private const int EncodedMiddle = 7;
+    private const int NeutralGrayCode = 4; // Gray(7) = 0100
+
+    public static readonly string[] LogicalParameters =
     {
-        if (obj == null)
-        {
-            EditorPrefs.DeleteKey(
-                key
-            );
+        "ToeLeft1Float",
+        "ToeLeft2Float",
+        "ToeLeft5Float",
+        "ToeRight1Float",
+        "ToeRight2Float",
+        "ToeRight5Float",
 
-            return;
-        }
+        "ToeSplayLeft1Float",
+        "ToeSplayLeft5Float",
+        "ToeSplayRight1Float",
+        "ToeSplayRight5Float",
+    };
 
-        string path =
-            AssetDatabase.GetAssetPath(
-                obj
-            );
-
-        string guid =
-            AssetDatabase.AssetPathToGUID(
-                path
-            );
-
-        EditorPrefs.SetString(
-            key,
-            guid
-        );
-    }
-
-    public static T GetObject<T>(
-        string key)
-        where T : UnityEngine.Object
-    {
-        if (
-            !EditorPrefs.HasKey(
-                key))
-        {
-            return null;
-        }
-
-        string guid =
-            EditorPrefs.GetString(
-                key
-            );
-
-        string path =
-            AssetDatabase.GUIDToAssetPath(
-                guid
-            );
-
-        return AssetDatabase.LoadAssetAtPath<T>(
-            path
-        );
-    }
-}
-
-static class BonePrefs
-{
-    private static Transform GetRoot(
-        Transform t)
-    {
-        if (t == null)
-        {
-            return null;
-        }
-
-        Transform root = t;
-
-        while (root.parent != null)
-        {
-            root =
-                root.parent;
-        }
-
-        return root;
-    }
-
-    public static void SaveBone(
-        string key,
-        Transform t)
-    {
-        if (t == null)
-        {
-            EditorPrefs.DeleteKey(
-                key
-            );
-
-            return;
-        }
-
-        Transform root =
-            GetRoot(t);
-
-        EditorPrefs.SetString(
-            key,
-            GetPathRelativeToRoot(
-                t,
-                root
-            )
-        );
-    }
-
-    public static Transform LoadBone(
-        string key)
-    {
-        if (
-            !EditorPrefs.HasKey(
-                key))
-        {
-            return null;
-        }
-
-        string path =
-            EditorPrefs.GetString(
-                key
-            );
-
-        string leafName =
-            path.Split('/')[^1];
-
-        foreach (
-            Transform t
-            in GameObject.FindObjectsOfType
-                <Transform>())
-        {
-            if (
-                t.name == leafName &&
-                GetPathRelativeToRoot(
-                    t,
-                    GetRoot(t)
-                ) ==
-                path)
-            {
-                return t;
-            }
-        }
-
-        return null;
-    }
-
-    private static string GetPathRelativeToRoot(
-        Transform t,
-        Transform root)
-    {
-        if (t == root)
-        {
-            return "";
-        }
-
-        string path =
-            t.name;
-
-        Transform parent =
-            t.parent;
-
-        while (
-            parent != null &&
-            parent != root)
-        {
-            path =
-                parent.name +
-                "/" +
-                path;
-
-            parent =
-                parent.parent;
-        }
-
-        return path;
-    }
     public static void Install(
         AnimatorController controller,
         VRCExpressionParameters expressionParameters)
@@ -2124,11 +1945,10 @@ static class BonePrefs
                 parameter,
                 AnimatorControllerParameterType.Float
             );
-        }
-        else if (
-            animatorMatches.Length != 1 ||
-            animatorMatches[0].type !=
-                AnimatorControllerParameterType.Float)
+        } else if (
+              animatorMatches.Length != 1 ||
+              animatorMatches[0].type !=
+                  AnimatorControllerParameterType.Float)
         {
             Debug.LogError(
                 $"[ToeRig] Animator parameter '{parameter}' must be a single Float parameter."
@@ -2151,8 +1971,7 @@ static class BonePrefs
         {
             expressionParameter =
                 parameters[index];
-        }
-        else
+        } else
         {
             expressionParameter =
                 new VRCExpressionParameters.Parameter
@@ -2214,8 +2033,7 @@ static class BonePrefs
             {
                 parameter =
                     parameters[index];
-            }
-            else
+            } else
             {
                 parameter =
                     new VRCExpressionParameters.Parameter
@@ -2709,70 +2527,181 @@ static class BonePrefs
         EditorUtility.SetDirty(controller);
     }
 
-    private static void DestroyStateMachineRecursive(
-        AnimatorStateMachine stateMachine)
+}
+
+static class Prefs
+{
+    public static void SetObject(
+        string key,
+        UnityEngine.Object obj)
     {
-        if (stateMachine == null)
+        if (obj == null)
         {
+            EditorPrefs.DeleteKey(
+                key
+            );
+
             return;
         }
 
-        foreach (
-            ChildAnimatorState child
-            in stateMachine.states)
-        {
-            AnimatorState state =
-                child.state;
-
-            foreach (
-                AnimatorStateTransition transition
-                in state.transitions)
-            {
-                UnityEngine.Object.DestroyImmediate(
-                    transition,
-                    true
-                );
-            }
-
-            UnityEngine.Object.DestroyImmediate(
-                state,
-                true
+        string path =
+            AssetDatabase.GetAssetPath(
+                obj
             );
+
+        string guid =
+            AssetDatabase.AssetPathToGUID(
+                path
+            );
+
+        EditorPrefs.SetString(
+            key,
+            guid
+        );
+    }
+
+    public static T GetObject<T>(
+        string key)
+        where T : UnityEngine.Object
+    {
+        if (
+            !EditorPrefs.HasKey(
+                key))
+        {
+            return null;
         }
 
-        foreach (
-            AnimatorStateTransition transition
-            in stateMachine.anyStateTransitions)
-        {
-            UnityEngine.Object.DestroyImmediate(
-                transition,
-                true
+        string guid =
+            EditorPrefs.GetString(
+                key
             );
-        }
 
-        foreach (
-            AnimatorTransition transition
-            in stateMachine.entryTransitions)
-        {
-            UnityEngine.Object.DestroyImmediate(
-                transition,
-                true
+        string path =
+            AssetDatabase.GUIDToAssetPath(
+                guid
             );
-        }
 
-        foreach (
-            ChildAnimatorStateMachine child
-            in stateMachine.stateMachines)
-        {
-            DestroyStateMachineRecursive(
-                child.stateMachine
-            );
-        }
-
-        UnityEngine.Object.DestroyImmediate(
-            stateMachine,
-            true
+        return AssetDatabase.LoadAssetAtPath<T>(
+            path
         );
     }
 }
+
+static class BonePrefs
+{
+    private static Transform GetRoot(
+        Transform t)
+    {
+        if (t == null)
+        {
+            return null;
+        }
+
+        Transform root = t;
+
+        while (root.parent != null)
+        {
+            root =
+                root.parent;
+        }
+
+        return root;
+    }
+
+    public static void SaveBone(
+        string key,
+        Transform t)
+    {
+        if (t == null)
+        {
+            EditorPrefs.DeleteKey(
+                key
+            );
+
+            return;
+        }
+
+        Transform root =
+            GetRoot(t);
+
+        EditorPrefs.SetString(
+            key,
+            GetPathRelativeToRoot(
+                t,
+                root
+            )
+        );
+    }
+
+    public static Transform LoadBone(
+        string key)
+    {
+        if (
+            !EditorPrefs.HasKey(
+                key))
+        {
+            return null;
+        }
+
+        string path =
+            EditorPrefs.GetString(
+                key
+            );
+
+        string leafName =
+            path.Split('/')[^1];
+
+        foreach (
+            Transform t
+            in GameObject.FindObjectsOfType
+                <Transform>())
+        {
+            if (
+                t.name == leafName &&
+                GetPathRelativeToRoot(
+                    t,
+                    GetRoot(t)
+                ) ==
+                path)
+            {
+                return t;
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetPathRelativeToRoot(
+        Transform t,
+        Transform root)
+    {
+        if (t == root)
+        {
+            return "";
+        }
+
+        string path =
+            t.name;
+
+        Transform parent =
+            t.parent;
+
+        while (
+            parent != null &&
+            parent != root)
+        {
+            path =
+                parent.name +
+                "/" +
+                path;
+
+            parent =
+                parent.parent;
+        }
+
+        return path;
+    }
+}
+
+
 
