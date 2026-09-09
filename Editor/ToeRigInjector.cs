@@ -732,7 +732,7 @@ public class ToeRigInjector : EditorWindow
                 );
 
             float splayDegrees =
-                normalizedSplay *
+                -normalizedSplay *
                 maximumSplay;
 
             if (invertValues)
